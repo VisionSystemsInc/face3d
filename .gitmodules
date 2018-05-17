@@ -1,0 +1,12 @@
+[submodule "external/vxl"]
+	path = external/vxl
+	url = https://github.com/vxl/vxl.git
+[submodule "external/dlib"]
+	path = external/dlib
+	url = https://github.com/davisking/dlib.git
+[submodule "external/libigl"]
+	path = external/libigl
+	url = https://github.com/libigl/libigl.git
+[submodule "external/pybind11"]
+	path = external/pybind11
+	url = https://github.com/pybind/pybind11.git

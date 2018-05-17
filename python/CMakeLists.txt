@@ -1,0 +1,13 @@
+FIND_PATH( PYBIND11_DIR include/pybind11/pybind11.h PATHS ${CMAKE_CURRENT_LIST_DIR}/../external/pybind11 NO_DEFAULT_PATH)
+MESSAGE(STATUS "pybind11 dir = " ${PYBIND11_DIR})
+add_subdirectory(${PYBIND11_DIR} "./pybind11_build")
+message("PYTHON_INCLUDE_DIRS=${PYTHON_INCLUDE_DIRS}")
+
+pybind11_add_module(pyface3d pybind_util.h pyface3d.cxx)
+if (FACE3D_USE_CUDA)
+  TARGET_COMPILE_DEFINITIONS(pyface3d PRIVATE FACE3D_USE_CUDA=1)
+endif()
+target_link_libraries(pyface3d PRIVATE face3d_basic face3d dlib)
+set_target_properties(pyface3d PROPERTIES OUTPUT_NAME face3d)
+set_target_properties(pyface3d PROPERTIES PREFIX "")
+set_target_properties(pyface3d PROPERTIES SUFFIX ".so")

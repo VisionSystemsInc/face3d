@@ -1,0 +1,5 @@
+add_executable(test_affine_camera_approximator test_affine_camera_approximator.cxx)
+target_link_libraries(test_affine_camera_approximator face3d_basic vgl vpgl vgl_algo)
+
+add_executable(test_numpy_io test_numpy_io.cxx)
+target_link_libraries(test_numpy_io face3d_basic vnl dlib)
