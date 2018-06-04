@@ -28,10 +28,20 @@ using std::string;
 using std::vector;
 using face3d::ortho_camera_parameters;
 
-
+std::mutex face3d::mesh_renderer::renderer_mutex_;
 face3d::mesh_renderer::mesh_renderer()
   : light_dir_(0,0.5,0.5), light_ambient_weight_(0.5), debug_mode_(false),
-  background_color_(50,150,50)
+    background_color_(50,150,50),device_id_(0)
+{
+#if !FACE3D_USE_EGL
+  glfw_window_ = nullptr;
+#endif
+  init_renderer();
+}
+
+face3d::mesh_renderer::mesh_renderer(unsigned device_id)
+  : light_dir_(0,0.5,0.5), light_ambient_weight_(0.5), debug_mode_(false),
+    background_color_(50,150,50),device_id_(device_id)
 {
 #if !FACE3D_USE_EGL
   glfw_window_ = nullptr;
@@ -56,6 +66,7 @@ void face3d::mesh_renderer::init_context_EGL()
   PFNEGLQUERYDEVICESEXTPROC eglQueryDevicesEXT = (PFNEGLQUERYDEVICESEXTPROC)eglGetProcAddress("eglQueryDevicesEXT");
    PFNEGLGETPLATFORMDISPLAYEXTPROC eglGetPlatformDisplayEXT = (PFNEGLGETPLATFORMDISPLAYEXTPROC)eglGetProcAddress("eglGetPlatformDisplayEXT");
    PFNEGLQUERYDEVICEATTRIBEXTPROC eglQueryDeviceAttribEXT = (PFNEGLQUERYDEVICEATTRIBEXTPROC)eglGetProcAddress("eglQueryDeviceAttribEXT");
+   PFNEGLQUERYDEVICESTRINGEXTPROC eglQueryDeviceStringEXT = (PFNEGLQUERYDEVICESTRINGEXTPROC) eglGetProcAddress("eglQueryDeviceStringEXT");
 
   EGLint num_egl_devices = -1;
 
@@ -70,12 +81,19 @@ void face3d::mesh_renderer::init_context_EGL()
     throw std::runtime_error("Found 0 EGL Devices");
   }
   std::vector<EGLDeviceEXT> egl_devices(num_egl_devices);
-  eglQueryDevicesEXT(num_egl_devices, &egl_devices[0], &num_egl_devices),
+   if (num_egl_devices <= this->device_id_) {
+     std::cerr << "ERROR: num_egl_devices = " << num_egl_devices <<" while requested device is "<<this->device_id_<< std::endl;
+    throw std::runtime_error("Invalid Device ID index");
+  }
+   eglQueryDevicesEXT(num_egl_devices, &egl_devices[0], &num_egl_devices);
+   const char *devstr= eglQueryDeviceStringEXT(egl_devices[this->device_id_], EGL_DRM_DEVICE_FILE_EXT);
+   std::stringstream dev_str;
+   dev_str<<devstr;
 
-  std::cout << "Using EGL Device 0 of " << num_egl_devices << std::endl;
+   std::cout << "Using EGL Device Index: " << this->device_id_ << " ("<<dev_str.str()<<")"<<std::endl;
 
   // 1. initialize the EGL display
-  egl_display_ = eglGetPlatformDisplayEXT(EGL_PLATFORM_DEVICE_EXT, egl_devices[0], 0);
+  egl_display_ = eglGetPlatformDisplayEXT(EGL_PLATFORM_DEVICE_EXT, egl_devices[this->device_id_], 0);
 #else
   egl_display_ = eglGetDisplay(EGL_DEFAULT_DISPLAY);
 #endif
@@ -203,6 +221,7 @@ void face3d::mesh_renderer::make_context_current()
 
 void face3d::mesh_renderer::init_renderer()
 {
+  std::lock_guard<std::mutex> guard(this->renderer_mutex_);
 #if FACE3D_USE_EGL
   init_context_EGL();
 #else
@@ -381,6 +400,7 @@ void face3d::mesh_renderer::init_renderer()
 
 face3d::mesh_renderer::~mesh_renderer()
 {
+  std::lock_guard<std::mutex> guard(this->renderer_mutex_);
   this->make_context_current();
   glDeleteProgram(shader_prog_ortho_);
   glDeleteProgram(rtt_shader_prog_ortho_);

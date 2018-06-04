@@ -14,10 +14,10 @@ vgl_vector_3d<double> axis_from_string(char axis);
 class  pose_jitterer_base {
 
 public:
-  pose_jitterer_base(std::string face3d_data_dir, int num_subject_components=20, int num_expression_components=10, std::string debug_dir=""):
-    base_mesh_(face3d::head_mesh(face3d_data_dir)), renderer_(0){
-    subject_components_.reset(new vnl_matrix<double>(face3d::io_utils::read_numpy_matrix(face3d_data_dir + "/pca_components_subject.npy").get_n_rows(0, num_subject_components)));
-    expression_components_.reset(new vnl_matrix<double>(face3d::io_utils::read_numpy_matrix(face3d_data_dir + "/pca_components_expression.npy").get_n_rows(0, num_expression_components)));
+  pose_jitterer_base(std::string pvr_data_dir, int num_subject_components=20, int num_expression_components=10, std::string debug_dir="", unsigned gl_device_id=0):
+    base_mesh_(face3d::head_mesh(pvr_data_dir)), renderer_(0), gl_device_id_(gl_device_id){
+    subject_components_.reset(new vnl_matrix<double>(face3d::io_utils::read_numpy_matrix(pvr_data_dir + "/pca_components_subject.npy").get_n_rows(0, num_subject_components)));
+    expression_components_.reset(new vnl_matrix<double>(face3d::io_utils::read_numpy_matrix(pvr_data_dir + "/pca_components_expression.npy").get_n_rows(0, num_expression_components)));
     face3d::generate_face_symmetry_map(base_mesh_, sym_map_dlib_);
     debug_dir_ = debug_dir;
     rnd=dlib::rand();
@@ -30,6 +30,7 @@ public:
     this->expression_component_in_ranges_ = other.expression_component_in_ranges_;
     this->subject_component_ranges_ = other.subject_component_ranges_;
     this->jitterer_ = other.jitterer_;
+    this->gl_device_id_ = other.gl_device_id_;
     this->debug_dir_ = other.debug_dir_;
     this->sym_map_dlib_ = dlib::array2d<dlib::vector<float, 2> >(other.sym_map_dlib_.nr(), other.sym_map_dlib_.nc());
     rnd=other.rnd;
@@ -45,6 +46,7 @@ public:
     this->subject_components_ = (other.subject_components_);
     this->expression_component_in_ranges_ = std::move(other.expression_component_in_ranges_);
     this->subject_component_ranges_ = std::move(other.subject_component_ranges_);
+    this->gl_device_id_ = other.gl_device_id_;
     this->jitterer_ = std::move(other.jitterer_);
     this->debug_dir_ = std::move(other.debug_dir_);
     this->sym_map_dlib_ = std::move(other.sym_map_dlib_);
@@ -52,10 +54,8 @@ public:
   }
   ~pose_jitterer_base(){
     if (this->debug_dir_!=""){
-      if (renderer_){
         std::thread::id this_id = std::this_thread::get_id();
-        std::cout<<" thread ID "<<std::hex<<this_id<<" killed the renderer"<<std::dec<<std::endl;
-      }
+        std::cout<<" thread ID "<<std::hex<<this_id<<" killed the pose_jitterer: "<<this<<std::dec<<std::endl;
     }
   }
 
@@ -84,9 +84,10 @@ public:
 
 
 protected:
+  unsigned gl_device_id_;
   void init_renderer(){
     if (!renderer_){
-      renderer_.reset(new face3d::mesh_renderer());
+      renderer_.reset(new face3d::mesh_renderer(this->gl_device_id_));
     }
   }
   CAM_T get_camera(CAM_T const& cam_og, double yaw, double pitch, double roll, unsigned nx, unsigned ny);
@@ -107,8 +108,10 @@ protected:
 class pose_jitterer_uniform: public pose_jitterer_base{
 
 public:
-  pose_jitterer_uniform(std::string face3d_data_dir, int num_subject_components=20, int num_expression_components=10, std::string debug_dir="", float min_yaw=-90.0f, float max_yaw=90.0f)
-    : pose_jitterer_base(face3d_data_dir, num_subject_components, num_expression_components, debug_dir)
+  pose_jitterer_uniform(std::string pvr_data_dir, int num_subject_components=20, int num_expression_components=10,
+                        std::string debug_dir="", float min_yaw=-90.0f, float max_yaw=90.0f,
+                        unsigned gl_device_id=0)
+    : pose_jitterer_base(pvr_data_dir, num_subject_components, num_expression_components, debug_dir, gl_device_id)
   {
     min_yaw_ = min_yaw;
     max_yaw_ = max_yaw;
@@ -164,8 +167,9 @@ private:
   class pose_jitterer_profile: public pose_jitterer_base{
 
 public:
-    pose_jitterer_profile(std::string face3d_data_dir, int num_subject_components=20, int num_expression_components=10, std::string debug_dir="", float min_yaw=30.0f, float max_yaw=90.0f)
-    : pose_jitterer_base(face3d_data_dir, num_subject_components, num_expression_components, debug_dir)
+    pose_jitterer_profile(std::string pvr_data_dir, int num_subject_components=20, int num_expression_components=10, std::string debug_dir="", float min_yaw=30.0f, float max_yaw=90.0f,
+                          unsigned gl_device_id=0)
+      : pose_jitterer_base(pvr_data_dir, num_subject_components, num_expression_components, debug_dir, gl_device_id)
   {
     min_yaw_ = fabs(min_yaw);
     max_yaw_ = fabs(max_yaw);

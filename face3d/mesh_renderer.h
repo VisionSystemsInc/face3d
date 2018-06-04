@@ -47,6 +47,7 @@ class mesh_renderer
 public:
 
   mesh_renderer();
+  mesh_renderer(unsigned device_id);
 #if !FACE3D_USE_EGL
   // constructor used for sharing GLFW OpenGL contexts
   mesh_renderer(GLFWwindow* window);
@@ -98,6 +99,7 @@ public:
 
   void set_debug_dir(std::string const& dbg_dir) { debug_dir_ = dbg_dir; }
   void set_debug_mode(bool dbg_mode) { debug_mode_ = dbg_mode; }
+  static std::mutex renderer_mutex_;
 
 private:
 
@@ -182,7 +184,7 @@ private:
 
   bool debug_mode_;
   std::string debug_dir_;
-
+  int device_id_;
   dlib::rgb_pixel background_color_;
   // standard rendering shader program (compile once and store)
   GLuint shader_prog_ortho_;

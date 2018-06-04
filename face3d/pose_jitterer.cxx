@@ -147,12 +147,13 @@ bool face3d::pose_jitterer_uniform::jitter_images(std::vector<dlib::matrix<dlib:
   //  return false;
   for (CAM_T & cam : cam_vec){
     dlib::matrix<dlib::rgb_pixel> last_rendered_no_alpha;
-    this->jitterer_->render(cam, subject_coeffs, expression_coeffs,
+    bool success = this->jitterer_->render(cam, subject_coeffs, expression_coeffs,
                             *this->subject_components_.get(), *this-> expression_components_.get(),
                             last_rendered_no_alpha);
-    output_images.push_back(std::move(last_rendered_no_alpha));
+    if (success)
+      output_images.push_back(std::move(last_rendered_no_alpha));
   }
-  return true;
+  return  output_images.size() == num_jitters;;
 }
 
 bool face3d::pose_jitterer_uniform::multiple_random_jitters(std::vector<dlib::matrix<dlib::rgb_pixel> >const & input_images,
@@ -173,12 +174,13 @@ bool face3d::pose_jitterer_uniform::multiple_random_jitters(std::vector<dlib::ma
 
  for (CAM_T & cam : cam_vec){
     dlib::matrix<dlib::rgb_pixel> last_rendered_no_alpha;
-    this->jitterer_->render(cam, subject_coeffs, expression_coeffs,
+    bool success = this->jitterer_->render(cam, subject_coeffs, expression_coeffs,
                             *this->subject_components_.get(), *this-> expression_components_.get(),
                             last_rendered_no_alpha);
-    output_images.push_back(std::move(last_rendered_no_alpha));
+    if (success)
+      output_images.push_back(std::move(last_rendered_no_alpha));
   }
-  return true;
+  return  output_images.size() == num_jitters;;
 
 
 }
@@ -250,17 +252,21 @@ bool face3d::pose_jitterer_profile::jitter_images(std::vector<dlib::matrix<dlib:
   vnl_vector<double> expression_coeffs = est_coeffs.expression_coeffs(0);
   std::thread::id this_id = std::this_thread::get_id();
   jitterer_.reset(new face3d::media_jitterer<CAM_T, dlib::matrix<dlib::rgb_pixel> >(input_images, est_coeffs.all_sightings(), this->base_mesh_,
-                                                    *this->subject_components_.get(), *this->expression_components_.get(),
-                                                    *this->renderer_, this->sym_map_dlib_, this->debug_dir_, false));
+                                                                                    *this->subject_components_.get(), *this->expression_components_.get(),
+                                                                                    *this->renderer_, this->sym_map_dlib_, this->debug_dir_, false));
   //  return false;
   for (CAM_T & cam : cam_vec){
     dlib::matrix<dlib::rgb_pixel> last_rendered_no_alpha;
-    this->jitterer_->render(cam, subject_coeffs, expression_coeffs,
-                            *this->subject_components_.get(), *this-> expression_components_.get(),
-                            last_rendered_no_alpha);
-    output_images.push_back(std::move(last_rendered_no_alpha));
+    bool success = this->jitterer_->render(cam, subject_coeffs, expression_coeffs,
+                                           *this->subject_components_.get(), *this->expression_components_.get(),
+                                           last_rendered_no_alpha);
+    if (success)
+      output_images.push_back(std::move(last_rendered_no_alpha));
+    else{
+      std::cout<<"[face3d::pose_jitterer::jitter_images]: could not render from camera "<<cam<<std::endl;
+    }
   }
-  return true;
+  return  output_images.size() == num_jitters;
 }
 bool face3d::pose_jitterer_profile::multiple_random_jitters(std::vector<dlib::matrix<dlib::rgb_pixel> >const & input_images,
                                                       face3d::subject_sighting_coefficients<CAM_T>const& est_coeffs,
@@ -274,19 +280,22 @@ bool face3d::pose_jitterer_profile::multiple_random_jitters(std::vector<dlib::ma
 
   vnl_vector<double> subject_coeffs = est_coeffs.subject_coeffs();
   vnl_vector<double> expression_coeffs = est_coeffs.expression_coeffs(0);
- jitterer_.reset(new face3d::media_jitterer<CAM_T, dlib::matrix<dlib::rgb_pixel> >(input_images, est_coeffs.all_sightings(), this->base_mesh_,
-                                                    *this->subject_components_.get(), *this->expression_components_.get(),
-                                                                                   *this->renderer_, this->sym_map_dlib_, this->debug_dir_, false));
+  jitterer_.reset(new face3d::media_jitterer<CAM_T, dlib::matrix<dlib::rgb_pixel> >(input_images, est_coeffs.all_sightings(), this->base_mesh_,
+                                                                                    *this->subject_components_.get(), *this->expression_components_.get(),
+                                                                                    *this->renderer_, this->sym_map_dlib_, this->debug_dir_, false));
 
- for (CAM_T & cam : cam_vec){
+  for (CAM_T & cam : cam_vec){
     dlib::matrix<dlib::rgb_pixel> last_rendered_no_alpha;
-    this->jitterer_->render(cam, subject_coeffs, expression_coeffs,
-                            *this->subject_components_.get(), *this-> expression_components_.get(),
-                            last_rendered_no_alpha);
-    output_images.push_back(std::move(last_rendered_no_alpha));
+    bool success = this->jitterer_->render(cam, subject_coeffs, expression_coeffs,
+                                           *this->subject_components_.get(), *this-> expression_components_.get(),
+                                           last_rendered_no_alpha);
+    if (success)
+      output_images.push_back(std::move(last_rendered_no_alpha));
+    else{
+      std::cout<<"[face3d::pose_jitterer::multiple_random_jitters]: could not render from camera "<<cam<<std::endl;
+    }
   }
-  return true;
-
+  return  output_images.size() == num_jitters;
 
 }
 
