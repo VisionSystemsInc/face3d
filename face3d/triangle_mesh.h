@@ -62,6 +62,8 @@ namespace face3d
       vgl_point_3d<double> vertex(int i) const { return vgl_point_3d<double>(V_(i,0),V_(i,1),V_(i,2)); }
       // get a single texture coordinate
       vgl_point_2d<double> vertex_tex(int i) const { return vgl_point_2d<double>(T_(i,0), T_(i,1)); }
+      // get a single vertex normal
+      vgl_point_3d<double> vertex_normal(int i) const { return vgl_point_3d<double>(N_(i,0), N_(i,1), N_(i,2)); }
       // set a single texture coordinate
       void set_texture_coord(int i, vgl_point_2d<double> const& uv) { T_(i,0) = uv.x(); T_(i,1) = uv.y();}
       // get the vertex index for a face

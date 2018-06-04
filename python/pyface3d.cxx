@@ -124,6 +124,14 @@ void construct_triangle_mesh_full(face3d::triangle_mesh &mesh,
   new (&mesh) triangle_mesh(Ve, Fe, Ne, Te);
 }
 
+void construct_textured_triangle_mesh(face3d::textured_triangle_mesh<MESH_TEX_T> &tmesh,
+                                      face3d::triangle_mesh const& mesh,
+                                      py::array_t<typename face3d_img_util::img_traits<MESH_TEX_T>::dtype> &tex)
+{
+  MESH_TEX_T tex_dlib;
+  pybind_util::img_from_buffer(tex, tex_dlib);
+  new (&tmesh) textured_triangle_mesh<MESH_TEX_T>(mesh, tex_dlib);
+}
 
 py::array_t<double>
 wrap_triangle_mesh_V(face3d::triangle_mesh const& mesh)
@@ -152,25 +160,26 @@ wrap_triangle_mesh_F(face3d::triangle_mesh const& mesh)
   return F_py;
 }
 
-template<class CAM_T, class IMG_T_IN, class IMG_T_OUT>
+template<class CAM_T, class IMG_T_IN, class IMG_T_OUT, class TEX_T>
 py::array_t<typename face3d_img_util::img_traits<IMG_T_OUT>::dtype>
 wrap_image_to_texture(py::array_t<typename face3d_img_util::img_traits<IMG_T_IN>::dtype> &img,
-                      face3d::head_mesh const& mesh, CAM_T const& cam_params,
+                      face3d::textured_triangle_mesh<TEX_T> const& mesh, CAM_T const& cam_params,
                       mesh_renderer &renderer)
 {
   IMG_T_IN img_dlib;
   pybind_util::img_from_buffer(img, img_dlib);
   IMG_T_OUT tex_out;
-  face3d::image_to_texture(img_dlib, mesh, cam_params, renderer, tex_out);
+  std::vector<face3d::textured_triangle_mesh<TEX_T> > meshes {mesh};
+  face3d::image_to_texture(img_dlib, meshes, cam_params, renderer, tex_out);
   py::array_t<typename face3d_img_util::img_traits<IMG_T_OUT>::dtype> tex_out_np;
   pybind_util::img_to_buffer(tex_out, tex_out_np);
   return tex_out_np;
 }
 
-template<class CAM_T, class IMG_T_IN, class IMG_T_OUT>
+template<class CAM_T, class IMG_T_IN, class IMG_T_OUT, class TEX_T>
 py::array_t<typename face3d_img_util::img_traits<IMG_T_OUT>::dtype>
 wrap_texture_to_image(py::array_t<typename face3d_img_util::img_traits<IMG_T_IN>::dtype> &tex,
-                      face3d::head_mesh const& mesh,
+                      face3d::textured_triangle_mesh<TEX_T> const& mesh,
                       CAM_T const& cam_params,
                       mesh_renderer &renderer)
 {
@@ -198,6 +207,17 @@ CAM_T wrap_compute_camera_params_from_pncc_and_offsets(py::array_t<float> &pncc,
   return cam_out;
 }
 
+ortho_camera_parameters<double>
+wrap_compute_camera_params_from_aflw_landmarks(std::vector<vgl_point_2d<double> > const& landmarks,
+                                               int nx, int ny)
+{
+  ortho_camera_parameters<double> cam_out;
+  if(!face3d::camera_estimation::
+     compute_camera_params_from_aflw_landmarks(landmarks, nx, ny, cam_out)) {
+    throw std::runtime_error("compute_camera_params_from_aflw_landmarks() failed");
+  }
+  return cam_out;
+}
 
 template<class CAM_T>
 CAM_T wrap_compute_camera_params(std::vector<vgl_point_2d<double> > const& pts2d,
@@ -208,6 +228,7 @@ CAM_T wrap_compute_camera_params(std::vector<vgl_point_2d<double> > const& pts2d
   face3d::camera_estimation::compute_camera_params(pts2d, pts3d, nx, ny, cam_out);
   return cam_out;
 }
+
 
 
 template<class CAM_T>
@@ -466,7 +487,7 @@ wrap_pose_jitterer_random_jitter(face3d::pose_jitterer_uniform& jitterer_uniform
 void wrap_pose_jitterer(py::module &m, std::string pyname)
 {
   py::class_<face3d::pose_jitterer_uniform>(m, pyname.c_str())
-    .def(py::init<std::string, int, int, std::string>())
+    .def(py::init<std::string, int, int, std::string, float, float, unsigned>())
     .def("jitter_images", wrap_pose_jitterer_jitter_images)
     .def("get_random_jitter", wrap_pose_jitterer_random_jitter);
 }
@@ -539,7 +560,7 @@ wrap_profile_jitterer_multiple_random_jitters(face3d::pose_jitterer_profile& jit
 void wrap_profile_jitterer(py::module &m, std::string pyname)
 {
   py::class_<face3d::pose_jitterer_profile>(m, pyname.c_str())
-    .def(py::init<std::string, int, int, std::string, float, float>())
+    .def(py::init<std::string, int, int, std::string, float, float, unsigned>())
     .def("jitter_images", wrap_profile_jitterer_jitter_images)
     .def("get_random_jitter", wrap_profile_jitterer_random_jitter)
     .def("multiple_random_jitters", wrap_profile_jitterer_multiple_random_jitters);
@@ -613,6 +634,7 @@ PYBIND11_MODULE(face3d, m)
   wrap_subject_sighting_coefficients<face3d::ortho_camera_parameters<double> >(m, "subject_ortho_sighting_coefficients");
   wrap_subject_sighting_coefficients<face3d::perspective_camera_parameters<double> >(m, "subject_perspective_sighting_coefficients");
 
+
   py::class_<face3d::triangle_mesh>(m,"triangle_mesh")
     .def(py::init<std::string>())
     .def(py::init<face3d::triangle_mesh&>())
@@ -631,6 +653,7 @@ PYBIND11_MODULE(face3d, m)
   py::class_<face3d::textured_triangle_mesh<MESH_TEX_T>, face3d::triangle_mesh >(m, "textured_triangle_mesh")
     .def(py::init<std::string, std::string>())
     .def(py::init<face3d::textured_triangle_mesh<MESH_TEX_T>& >())
+    .def("__init__", construct_textured_triangle_mesh)
     .def_property_readonly("num_faces", &face3d::textured_triangle_mesh<MESH_TEX_T>::num_faces)
     .def_property_readonly("num_vertices", &face3d::textured_triangle_mesh<MESH_TEX_T>::num_vertices)
     .def("set_texture", &wrap_set_texture<MESH_TEX_T>);
@@ -675,6 +698,8 @@ PYBIND11_MODULE(face3d, m)
 
   m.def("compute_camera_params_from_pncc_and_offsets_ortho", &wrap_compute_camera_params_from_pncc_and_offsets<ortho_camera_parameters<double> >);
   m.def("compute_camera_params_from_pncc_and_offsets_perspective", &wrap_compute_camera_params_from_pncc_and_offsets<perspective_camera_parameters<double> >);
+  m.def("compute_camera_params_from_aflw_landmarks", &wrap_compute_camera_params_from_aflw_landmarks);
+
   m.def("compute_camera_params_ortho", &wrap_compute_camera_params<ortho_camera_parameters<double> >);
   m.def("compute_camera_params_perspective", &wrap_compute_camera_params<perspective_camera_parameters<double> >);
 
@@ -685,14 +710,14 @@ PYBIND11_MODULE(face3d, m)
 
   m.def("coeffs_to_pixmap", &wrap_coeffs_to_pixmap);
 
-  m.def("texture_to_image", &wrap_texture_to_image<face3d::perspective_camera_parameters<double>, dlib::array2d<dlib::rgb_alpha_pixel>, dlib::array2d<dlib::rgb_alpha_pixel> >);
-  m.def("texture_to_image", &wrap_texture_to_image<face3d::ortho_camera_parameters<double>, dlib::array2d<dlib::rgb_alpha_pixel>, dlib::array2d<dlib::rgb_alpha_pixel> >);
-  m.def("texture_to_image_float", &wrap_texture_to_image<face3d::perspective_camera_parameters<double>, vil_image_view<float>, vil_image_view<float> >);
-  m.def("texture_to_image_float", &wrap_texture_to_image<face3d::ortho_camera_parameters<double>, vil_image_view<float>, vil_image_view<float> >);
-  m.def("image_to_texture", &wrap_image_to_texture<face3d::perspective_camera_parameters<double>, dlib::array2d<dlib::rgb_pixel>, dlib::array2d<dlib::rgb_alpha_pixel> >);
-  m.def("image_to_texture", &wrap_image_to_texture<face3d::ortho_camera_parameters<double>, dlib::array2d<dlib::rgb_pixel>, dlib::array2d<dlib::rgb_alpha_pixel> >);
-  m.def("image_to_texture_float", &wrap_image_to_texture<face3d::perspective_camera_parameters<double>, vil_image_view<float>, vil_image_view<float> >);
-  m.def("image_to_texture_float", &wrap_image_to_texture<face3d::ortho_camera_parameters<double>, vil_image_view<float>, vil_image_view<float> >);
+  m.def("texture_to_image", &wrap_texture_to_image<face3d::perspective_camera_parameters<double>, dlib::array2d<dlib::rgb_alpha_pixel>, dlib::array2d<dlib::rgb_alpha_pixel>, MESH_TEX_T >);
+  m.def("texture_to_image", &wrap_texture_to_image<face3d::ortho_camera_parameters<double>, dlib::array2d<dlib::rgb_alpha_pixel>, dlib::array2d<dlib::rgb_alpha_pixel>, MESH_TEX_T >);
+  m.def("texture_to_image_float", &wrap_texture_to_image<face3d::perspective_camera_parameters<double>, vil_image_view<float>, vil_image_view<float>, MESH_TEX_T >);
+  m.def("texture_to_image_float", &wrap_texture_to_image<face3d::ortho_camera_parameters<double>, vil_image_view<float>, vil_image_view<float>, MESH_TEX_T >);
+  m.def("image_to_texture", &wrap_image_to_texture<face3d::perspective_camera_parameters<double>, dlib::array2d<dlib::rgb_pixel>, dlib::array2d<dlib::rgb_alpha_pixel>, MESH_TEX_T >);
+  m.def("image_to_texture", &wrap_image_to_texture<face3d::ortho_camera_parameters<double>, dlib::array2d<dlib::rgb_pixel>, dlib::array2d<dlib::rgb_alpha_pixel>, MESH_TEX_T >);
+  m.def("image_to_texture_float", &wrap_image_to_texture<face3d::perspective_camera_parameters<double>, vil_image_view<float>, vil_image_view<float>, MESH_TEX_T >);
+  m.def("image_to_texture_float", &wrap_image_to_texture<face3d::ortho_camera_parameters<double>, vil_image_view<float>, vil_image_view<float>, MESH_TEX_T >);
   m.def("generate_face_symmetry_map", &wrap_generate_face_symmetry_map);
   m.def("mask_mesh_faces", &wrap_mask_mesh_faces);
 

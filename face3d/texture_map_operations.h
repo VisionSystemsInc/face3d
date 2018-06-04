@@ -28,15 +28,15 @@ void complete_texture(dlib::array2d<dlib::rgb_alpha_pixel> const& tex,
 void mask_mesh_faces(triangle_mesh const& mesh, dlib::array2d<unsigned char> const& texmask,
                 std::vector<size_t> &valid_faces);
 
-template<class CAM_T, class IMG_T_IN, class IMG_T_OUT>
+template<class CAM_T, class IMG_T_IN, class IMG_T_OUT, class TEX_T>
   void image_to_texture(IMG_T_IN const& img,
-                        head_mesh const& subject_mesh, CAM_T const& cam_params,
+                        std::vector<textured_triangle_mesh<TEX_T> > const& meshes, CAM_T const& cam_params,
                         mesh_renderer &renderer,
                         IMG_T_OUT &tex_out)
 {
   std::vector<IMG_T_OUT > textures_out;
   renderer.set_ambient_weight(1.0f);
-  renderer.render_to_texture(subject_mesh.meshes(), img, cam_params, textures_out);
+  renderer.render_to_texture(meshes, img, cam_params, textures_out);
   if (textures_out.size() == 0) {
     std::cerr << "ERROR: render_to_texture returned array of 0 textures" << std::endl;
     throw std::runtime_error("unexpected return value from render_to_texture");
@@ -48,18 +48,14 @@ template<class CAM_T, class IMG_T_IN, class IMG_T_OUT>
   return;
 }
 
-template<class CAM_T, class IMG_T_IN, class IMG_T_OUT>
+template<class CAM_T, class IMG_T_IN, class IMG_T_OUT, class TEX_T>
 void texture_to_image(IMG_T_IN const& tex,
-                      head_mesh const& subject_mesh, CAM_T const& cam_params,
+                      textured_triangle_mesh<TEX_T> const& mesh, CAM_T const& cam_params,
                       mesh_renderer &renderer,
                       IMG_T_OUT &img_out)
 {
-  if (subject_mesh.meshes().size() > 1) {
-    std::cerr << "WARNING: face3d::texture_to_image():";
-    std::cerr << "  only first mesh of head_mesh is being rendered to texture." << std::endl;
-  }
   std::vector<textured_triangle_mesh<IMG_T_IN> > meshes
-  { textured_triangle_mesh<IMG_T_IN>(subject_mesh.face_mesh(), tex) };
+  { textured_triangle_mesh<IMG_T_IN>(mesh, tex) };
 
   renderer.set_ambient_weight(1.0f);
   renderer.render(meshes, cam_params, img_out);
