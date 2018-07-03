@@ -32,9 +32,7 @@ include_directories(${GLAD_INCLUDE_DIR})
 message("GLAD_INCLUDE_DIR = ${GLAD_INCLUDE_DIR}")
 
 
-
 SET(CMAKE_POSITION_INDEPENDENT_CODE TRUE)
-
 
 # setup vxl
 set(vxl_SRC_DIR ${CMAKE_CURRENT_SOURCE_DIR}/external/vxl)
@@ -50,7 +48,7 @@ include_directories(${VXL_VCL_INCLUDE_DIR})
 set(CMAKE_CXX_STANDARD 11)
 
 # setup dlib
-set(DLIB_SRC_DIR ${CMAKE_CURRENT_SOURCE_DIR}/external/dlib)
+set(DLIB_SRC_DIR ${CMAKE_CURRENT_SOURCE_DIR}/external/dlib CACHE PATH "root dlib directory")
 set(USE_SSE4_INSTRUCTIONS ON CACHE BOOL "USE SSE4 instructions in Dlib")
 SET(DLIB_GIF_SUPPORT OFF CACHE BOOL "DLIB GIF Support") # incompatible DLIB API call with system libgif
 SET(DLIB_NO_GUI_SUPPORT ON CACHE BOOL "Disable DLIB GUI Support") # missing X11 header under anaconda
@@ -61,14 +59,17 @@ include_directories(${DLIB_SRC_DIR})
 
 # setup libigl
 set(libigl_SRC_DIR ${CMAKE_CURRENT_SOURCE_DIR}/external/libigl)
-set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${libigl_SRC_DIR}/shared/cmake)
+list(APPEND CMAKE_MODULE_PATH "${libigl_SRC_DIR}/shared/cmake")
+
 set(LIBIGL_USE_STATIC_LIBRARY ON CACHE BOOL "Use LibIGL as static library" FORCE)
 set(LIBIGL_WITH_VIEWER OFF CACHE BOOL "Use OpenGL viewer"  FORCE)
 set(LIBIGL_WITH_NANOGUI OFF CACHE BOOL "Use Nanogui menu" FORCE)
 set(LIBIGL_WITH_EMBREE OFF CACHE BOOL "Use Embree" FORCE)
 set(LIBIGL_WITH_TRIANGLE ON CACHE BOOL "Use Triangle" FORCE)
+set(LIBIGL_WITH_OPENGL OFF CACHE BOOL "Use OpenGL within libigl" FORCE)
 set(NANOGUI_INSTALL OFF CACHE BOOL "Install nanogui to system")
-include(${libigl_SRC_DIR}/shared/cmake/libigl.cmake)
+include(libigl)
+
 set(LIBIGL_INCLUDE_DIR ${libigl_SRC_DIR}/include)
 include_directories(${LIBIGL_INCLUDE_DIR})
 

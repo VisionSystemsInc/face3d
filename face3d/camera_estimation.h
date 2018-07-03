@@ -33,10 +33,6 @@ bool compute_camera_params_from_pncc_and_offsets(dlib::array2d<vgl_point_3d<T> >
                                                  dlib::array2d<vgl_vector_3d<T> > const& offsets,
                                                  CAM_T &cam_params);
 
-bool compute_camera_params_from_aflw_landmarks(std::vector<vgl_point_2d<double> > const& landmarks,
-                                               int nx, int ny,
-                                               ortho_camera_parameters<double> &cam_params);
-
 // function object for computing perspective camera with known focal length and principal pt
 class compute_camera_params_calibrated
 {

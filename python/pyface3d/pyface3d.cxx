@@ -207,18 +207,6 @@ CAM_T wrap_compute_camera_params_from_pncc_and_offsets(py::array_t<float> &pncc,
   return cam_out;
 }
 
-ortho_camera_parameters<double>
-wrap_compute_camera_params_from_aflw_landmarks(std::vector<vgl_point_2d<double> > const& landmarks,
-                                               int nx, int ny)
-{
-  ortho_camera_parameters<double> cam_out;
-  if(!face3d::camera_estimation::
-     compute_camera_params_from_aflw_landmarks(landmarks, nx, ny, cam_out)) {
-    throw std::runtime_error("compute_camera_params_from_aflw_landmarks() failed");
-  }
-  return cam_out;
-}
-
 template<class CAM_T>
 CAM_T wrap_compute_camera_params(std::vector<vgl_point_2d<double> > const& pts2d,
                                  std::vector<vgl_point_3d<double> > const& pts3d,
@@ -642,6 +630,7 @@ PYBIND11_MODULE(face3d, m)
     .def("__init__", construct_triangle_mesh_full)
     .def_property_readonly("num_faces", &face3d::triangle_mesh::num_faces)
     .def_property_readonly("num_vertices", &face3d::triangle_mesh::num_vertices)
+    .def("save_ply", &face3d::triangle_mesh::save_ply)
     .def("V", &wrap_triangle_mesh_V)
     .def("F", &wrap_triangle_mesh_F)
     .def("UV", &wrap_triangle_mesh_UV)
@@ -698,7 +687,6 @@ PYBIND11_MODULE(face3d, m)
 
   m.def("compute_camera_params_from_pncc_and_offsets_ortho", &wrap_compute_camera_params_from_pncc_and_offsets<ortho_camera_parameters<double> >);
   m.def("compute_camera_params_from_pncc_and_offsets_perspective", &wrap_compute_camera_params_from_pncc_and_offsets<perspective_camera_parameters<double> >);
-  m.def("compute_camera_params_from_aflw_landmarks", &wrap_compute_camera_params_from_aflw_landmarks);
 
   m.def("compute_camera_params_ortho", &wrap_compute_camera_params<ortho_camera_parameters<double> >);
   m.def("compute_camera_params_perspective", &wrap_compute_camera_params<perspective_camera_parameters<double> >);
