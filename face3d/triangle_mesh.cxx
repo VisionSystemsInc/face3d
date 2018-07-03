@@ -79,3 +79,9 @@ save_obj(std::string const& mesh_filename) const
 {
   igl::writeOBJ(mesh_filename, V_, F_, N_, F_, T_, F_);
 }
+
+void face3d::triangle_mesh::
+save_ply(std::string const& mesh_filename) const
+{
+  igl::writePLY(mesh_filename, V_, F_, N_, T_);
+}

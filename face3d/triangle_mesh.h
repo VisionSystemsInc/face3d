@@ -73,6 +73,7 @@ namespace face3d
       int num_vertices() const { return V_.rows(); }
 
       void save_obj(std::string const& mesh_filename) const;
+      void save_ply(std::string const& mesh_filename) const;
 
     private:
       VTYPE V_;
