@@ -32,17 +32,15 @@ if(FACE3D_USE_CUDA)
 endif()
 
 message(STATUS "LIBIGL_LIBRARIES = ${LIBIGL_LIBRARIES}")
-message(STATUS "LIBIGL_EXTRA_LIBRARIES = ${LIBIGL_EXTRA_LIBRARIES}")
-
 
 if(FACE3D_USE_CUDA)
   SET(CUDA_NVCC_FLAGS "${CUDA_NVCC_FLAGS} -shared -Xcompiler -fPIC -std=c++11")
   CUDA_ADD_LIBRARY(face3d ${FACE3D_SOURCES})
   TARGET_COMPILE_DEFINITIONS(face3d PRIVATE FACE3D_USE_CUDA=1)
-  target_link_libraries(face3d face3d_basic dlib vnl vnl_algo vul vgl vgl_algo vpgl vpgl_algo vil ${LIBIGL_LIBRARIES} ${LIBIGL_EXTRA_LIBRARIES} ${CUDA_LIBRARY} -ldl)
+  target_link_libraries(face3d face3d_basic dlib vnl vnl_algo vul vgl vgl_algo vpgl vpgl_algo vil ${LIBIGL_LIBRARIES} ${CUDA_LIBRARY} -ldl)
 else()
   add_library(face3d ${FACE3D_SOURCES})
-  target_link_libraries(face3d face3d_basic dlib vnl vnl_algo vul vgl vgl_algo vpgl vpgl_algo vil ${LIBIGL_LIBRARIES} ${LIBIGL_EXTRA_LIBRARIES} -ldl)
+  target_link_libraries(face3d face3d_basic dlib vnl vnl_algo vul vgl vgl_algo vpgl vpgl_algo vil ${LIBIGL_LIBRARIES} -ldl)
 endif()
 set_target_properties(face3d PROPERTIES POSITION_INDEPENDENT_CODE True)
 
