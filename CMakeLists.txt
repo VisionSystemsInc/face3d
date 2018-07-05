@@ -1,13 +1,15 @@
 project(face3d)
-cmake_minimum_required(VERSION 3.1)
+cmake_minimum_required(VERSION 3.10)
 if(POLICY CMP0042)
   cmake_policy(SET CMP0042 NEW)
 endif(POLICY CMP0042)
 
 
-find_library(EGL_LIBRARY EGL)
-message(STATUS "EGL_LIBRARY = " ${EGL_LIBRARY})
-if (EGL_LIBRARY)
+set(OpenGL_GL_PREFERENCE "GLVND" CACHE STRING "Prefer Vendor-neutral OpenGL loader")
+find_package(OpenGL)
+
+message(STATUS "OPENGL_egl_LIBRARY = " ${OPENGL_egl_LIBRARY})
+if (OPENGL_egl_LIBRARY)
   set(FACE3D_USE_EGL TRUE CACHE BOOL "Use EGL for OpenGL context generation")
 else()
   set(FACE3D_USE_EGL FALSE CACHE BOOL "Use EGL for OpenGL context generation")
@@ -66,8 +68,14 @@ set(LIBIGL_WITH_VIEWER OFF CACHE BOOL "Use OpenGL viewer"  FORCE)
 set(LIBIGL_WITH_NANOGUI OFF CACHE BOOL "Use Nanogui menu" FORCE)
 set(LIBIGL_WITH_EMBREE OFF CACHE BOOL "Use Embree" FORCE)
 set(LIBIGL_WITH_TRIANGLE ON CACHE BOOL "Use Triangle" FORCE)
-set(LIBIGL_WITH_OPENGL OFF CACHE BOOL "Use OpenGL within libigl" FORCE)
 set(NANOGUI_INSTALL OFF CACHE BOOL "Install nanogui to system")
+if(${FACE3D_USE_EGL})
+  set(LIBIGL_WITH_OPENGL_GLFW  OFF CACHE BOOL "Use OpenGL GLFW" FORCE)
+  set(LIBIGL_WITH_OPENGL OFF CACHE BOOL  "Use OpenGL"  FORCE)
+else()
+  set(LIBIGL_WITH_OPENGL_GLFW  ON CACHE BOOL "Use OpenGL GLFW" FORCE)
+  set(LIBIGL_WITH_OPENGL       ON CACHE BOOL  "Use OpenGL"  FORCE)
+endif()
 include(libigl)
 
 set(LIBIGL_INCLUDE_DIR ${libigl_SRC_DIR}/include)
@@ -79,13 +87,6 @@ message(STATUS "EIGEN_INCLUDE_DIR=${EIGEN_INCLUDE_DIR}")
 include_directories(${EIGEN_INCLUDE_DIR})
 
 
-if(${FACE3D_USE_EGL})
-  set(LIBIGL_WITH_OPENGL_GLFW  OFF CACHE BOOL "Use OpenGL GLFW" FORCE)
-  set(LIBIGL_WITH_OPENGLOFFOFF CACHE BOOL  "Use OpenGL"  FORCE)
-else()
-  set(LIBIGL_WITH_OPENGL_GLFW  ON CACHE BOOL "Use OpenGL GLFW" FORCE)
-  set(LIBIGL_WITH_OPENGL       ON CACHE BOOL  "Use OpenGL"  FORCE)
-endif()
 
 
 

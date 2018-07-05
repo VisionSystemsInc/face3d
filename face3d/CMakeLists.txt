@@ -47,5 +47,5 @@ endif()
 set_target_properties(face3d PROPERTIES POSITION_INDEPENDENT_CODE True)
 
 if (FACE3D_USE_EGL)
-  target_link_libraries(face3d ${EGL_LIBRARY})
+  target_link_libraries(face3d ${OPENGL_egl_LIBRARY})
 endif()
