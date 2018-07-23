@@ -675,6 +675,7 @@ PYBIND11_MODULE(face3d, m)
 
   py::class_<face3d::mesh_renderer>(m, "mesh_renderer")
     .def(py::init<>())
+    .def(py::init<unsigned>())
     .def("render", &wrap_render<ortho_camera_parameters<double>, MESH_TEX_T >)
     .def("render", &wrap_render<perspective_camera_parameters<double>, MESH_TEX_T>)
     .def("render_3d", &wrap_render_3d<ortho_camera_parameters<double>, MESH_TEX_T>)
