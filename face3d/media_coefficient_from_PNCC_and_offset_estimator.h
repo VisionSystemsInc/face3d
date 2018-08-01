@@ -8,14 +8,12 @@
 #include "camera_estimation.h"
 
 #include <vnl/vnl_matrix.h>
-#include <vnl/algo/vnl_matrix_inverse.h>
-#include <vnl/algo/vnl_cholesky.h>
-#include <vnl/algo/vnl_ldl_cholesky.h>
-#include <vnl/algo/vnl_qr.h>
 
 #include <face3d_basic/io_utils.h>
 #include <face3d_basic/subject_sighting_coefficients.h>
 #include <igl/AABB.h>
+
+#include <Eigen/Dense>
 
 namespace face3d {
 
@@ -187,7 +185,6 @@ estimate_coefficients(std::vector<std::string> const& img_ids,
   const int num_vars = num_subject_components + num_valid_images*num_expression_components;
 
   Eigen::MatrixXd D = Eigen::MatrixXd::Zero(3*total_num_data, num_vars);
-  Eigen::VectorXd coeffs_raw;
   Eigen::VectorXd all_constraints(3*total_num_data);
   if (D.cols() == 0) {
     std::cerr << "Error: D matrix has " << D.cols() << " columns." << std::endl;
@@ -228,7 +225,7 @@ estimate_coefficients(std::vector<std::string> const& img_ids,
 
   // solve regularized SVD using Tikhonov Regularization
   D_inverse = (D_transpose*D + reg_matrix.transpose()*reg_matrix).inverse()*D_transpose;
-  coeffs_raw = D_inverse*all_constraints;
+  Eigen::VectorXd coeffs_raw = D_inverse*all_constraints;
 
   vnl_vector<double> subject_coeffs(num_subject_components, 0.0);
 
