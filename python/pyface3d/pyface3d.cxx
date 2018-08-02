@@ -323,6 +323,22 @@ wrap_render_3d(face3d::mesh_renderer &renderer,
   return py_img3d;
 }
 
+template<class CAM_T, class TEX_T>
+py::array_t<float>
+wrap_render_uv(face3d::mesh_renderer &renderer,
+               std::vector<face3d::textured_triangle_mesh<TEX_T> > const& meshes,
+               CAM_T const& cam_params)
+{
+  dlib::array2d<vgl_point_3d<float> > img_uv;
+  face3d::render_aux_out aux_out;
+  aux_out.uv_ = &img_uv;
+  dlib::array2d<dlib::rgb_alpha_pixel> img;
+  renderer.render(meshes, cam_params, img, aux_out);
+  py::array_t<float> py_img_uv;
+  pybind_util::img_to_buffer(img_uv, py_img_uv);
+  return py_img_uv;
+}
+
 
 template<class TEX_T>
 void wrap_set_texture(face3d::textured_triangle_mesh<TEX_T> &mesh,
@@ -680,6 +696,8 @@ PYBIND11_MODULE(face3d, m)
     .def("render", &wrap_render<perspective_camera_parameters<double>, MESH_TEX_T>)
     .def("render_3d", &wrap_render_3d<ortho_camera_parameters<double>, MESH_TEX_T>)
     .def("render_3d", &wrap_render_3d<perspective_camera_parameters<double>, MESH_TEX_T>)
+    .def("render_uv", &wrap_render_uv<ortho_camera_parameters<double>, MESH_TEX_T>)
+    .def("render_uv", &wrap_render_uv<perspective_camera_parameters<double>, MESH_TEX_T>)
     .def("render_2d", &wrap_render_2d)
     .def("set_ambient_weight", &face3d::mesh_renderer::set_ambient_weight)
     .def("set_light_dir", &face3d::mesh_renderer::set_light_dir);
