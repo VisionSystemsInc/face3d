@@ -60,11 +60,15 @@ add_subdirectory(${DLIB_SRC_DIR}/dlib dlib_build)
 include_directories(${DLIB_SRC_DIR})
 
 # setup libigl
+# raise a compiler error if any LPGL code is including from Eigen
+add_definitions("-DEIGEN_MPL2_ONLY")
 set(libigl_SRC_DIR ${CMAKE_CURRENT_SOURCE_DIR}/external/libigl)
 list(APPEND CMAKE_MODULE_PATH "${libigl_SRC_DIR}/shared/cmake")
 
-set(LIBIGL_USE_STATIC_LIBRARY ON CACHE BOOL "Use LibIGL as static library" FORCE)
+set(LIBIGL_USE_STATIC_LIBRARY OFF CACHE BOOL "Use LibIGL as static library" FORCE)
 set(LIBIGL_WITH_VIEWER OFF CACHE BOOL "Use OpenGL viewer"  FORCE)
+set(LIBIGL_WITH_COMISO OFF CACHE BOOL "Use CoMiso" FORCE)
+set(LIBIGL_WITH_LIM OFF CACHE BOOL "Use LIM" FORCE)
 set(LIBIGL_WITH_NANOGUI OFF CACHE BOOL "Use Nanogui menu" FORCE)
 set(LIBIGL_WITH_EMBREE OFF CACHE BOOL "Use Embree" FORCE)
 set(LIBIGL_WITH_TRIANGLE ON CACHE BOOL "Use Triangle" FORCE)
