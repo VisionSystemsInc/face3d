@@ -25,6 +25,8 @@
 
 #include <igl/AABB.h>
 
+#include "estimation_results.h"
+
 namespace face3d {
 
 
@@ -39,11 +41,11 @@ public:
                                                 bool debug_mode, std::string debug_dir);
 
   template<class T>
-    bool estimate_coefficients(std::vector<std::string> const& img_ids,
+    estimation_results_t estimate_coefficients(std::vector<std::string> const& img_ids,
                                std::vector<dlib::array2d<vgl_point_3d<float> > > const& semantic_maps,
                                subject_sighting_coefficients<T> &results);
   template<class T>
-    bool estimate_coefficients_nonlin(std::vector<std::string> const& img_ids,
+    estimation_results_t estimate_coefficients_nonlin(std::vector<std::string> const& img_ids,
                                       std::vector<dlib::array2d<vgl_point_3d<float> > > const& semantic_maps,
                                       subject_sighting_coefficients<T> &results,
                                       float regularization_weight=0.0f);
@@ -167,7 +169,7 @@ private:
 
 
 template<class CAM_T>
-bool media_coefficient_from_semantic_map_estimator::
+estimation_results_t media_coefficient_from_semantic_map_estimator::
 estimate_coefficients_nonlin(std::vector<std::string> const& img_ids,
                              std::vector<dlib::array2d<vgl_point_3d<float> > > const& semantic_maps,
                              subject_sighting_coefficients<CAM_T> &results,
@@ -184,10 +186,12 @@ estimate_coefficients_nonlin(std::vector<std::string> const& img_ids,
   const int num_images = semantic_maps.size();
   std::vector<CAM_T> all_cam_params;
 
+  estimation_results_t retval(num_images);
   for (int n=0; n<num_images; ++n) {
     // find base mesh vertex projections
     std::map<int, vgl_point_2d<double> > vertex_projection_map;
     extract_vertex_projections(semantic_maps[n], mean_face_mesh_, vertex_projection_map, mean_face_mesh_tree_);
+    retval.vertices_found_[n] = vertex_projection_map.size();
     std::vector<vgl_point_2d<double> > vertex_projections;
     std::vector<int> vertex_indices;
     std::vector<vgl_point_3d<double> > mesh_vertices;
@@ -210,6 +214,7 @@ estimate_coefficients_nonlin(std::vector<std::string> const& img_ids,
     const int min_corrs = 10;
     if (vertex_projections.size() >= min_corrs) {
       camera_estimation::compute_camera_params(vertex_projections, mesh_vertices, nx, ny, cam_params);
+      retval.image_success_[n] = true;
     }
     else {
       cam_params.set_image_size(nx,ny);
@@ -273,12 +278,13 @@ estimate_coefficients_nonlin(std::vector<std::string> const& img_ids,
       }
   }
 
-  return true;
+  retval.success_ = true;
+  return retval;
 }
 
 
 template<class T>
-bool media_coefficient_from_semantic_map_estimator::
+estimation_results_t media_coefficient_from_semantic_map_estimator::
 estimate_coefficients(std::vector<std::string> const& img_ids,
                       std::vector<dlib::array2d<vgl_point_3d<float> > > const& semantic_maps,
                       subject_sighting_coefficients<T> &results)
@@ -298,9 +304,11 @@ estimate_coefficients(std::vector<std::string> const& img_ids,
   // keep track of all used mesh vertices. This vector will remain empty if not in debug mode.
   std::vector<std::vector<int> > vertex_indices_dbg(num_images);
   // for each image
+  estimation_results_t retval(num_images);
   for (int n=0; n<num_images; ++n) {
     std::map<int, vgl_point_2d<double> > vertex_projection_map;
     extract_vertex_projections(semantic_maps[n], mean_face_mesh_, vertex_projection_map, mean_face_mesh_tree_);
+    retval.vertices_found_[n] = vertex_projection_map.size();
     std::vector<vgl_point_2d<double> > vertex_projections;
     std::vector<int> vertex_indices;
     std::vector<vgl_point_3d<double> > mesh_vertices;
@@ -318,7 +326,7 @@ estimate_coefficients(std::vector<std::string> const& img_ids,
     const int min_corrs = 10;
     if (vertex_projections.size() < min_corrs) {
       std::cerr << "ERROR: found " << vertex_projections.size() << " correspondences, need " << min_corrs << std::endl;
-      return false;
+      return retval;
     }
     // compute camera parameters for this image
     T cam_params;
@@ -337,19 +345,21 @@ estimate_coefficients(std::vector<std::string> const& img_ids,
     auto pcam = cam_params.to_camera();
     affine_camera_approximator<double> local_affine(pcam);
 
+    vnl_matrix<double> subject_pca_components_transpose = subject_pca_components_.transpose().get_n_columns(0,num_subject_components);
+    vnl_matrix<double> expression_pca_components_transpose = expression_pca_components_.transpose().get_n_columns(0,num_expression_components);
     for (int i=0; i<num_data; ++i) {
       int vert_idx = vertex_indices[i];
       const vpgl_affine_camera<double> aff_cam = local_affine(vgl_homg_point_3d<double>(mesh_vertices[i]));
       const vnl_matrix<double> Pfull = aff_cam.get_matrix();
       const vnl_matrix<double> Psub = Pfull.get_n_rows(0,2).get_n_columns(0,3);
-      vnl_matrix<double> ai = Psub * subject_pca_components_.transpose().get_n_rows(3*vert_idx,3).get_n_columns(0,num_subject_components);
+      vnl_matrix<double> ai = Psub * subject_pca_components_transpose.get_n_rows(3*vert_idx,3);
       if ((ai.rows() != 2) || (ai.cols() != num_subject_components)) {
         throw std::runtime_error("got unexpected matrix size for ai");
       }
       A.set_row(i*2, ai.get_row(0));
       A.set_row(i*2+1, ai.get_row(1));
 
-      vnl_matrix<double> bi = Psub * expression_pca_components_.transpose().get_n_rows(3*vert_idx,3).get_n_columns(0,num_expression_components);
+      vnl_matrix<double> bi = Psub * expression_pca_components_transpose.get_n_rows(3*vert_idx,3);
       if ((bi.rows() != 2) || (bi.cols() != num_expression_components)) {
         throw std::runtime_error("got unexpected matrix size for ai");
       }
@@ -366,6 +376,7 @@ estimate_coefficients(std::vector<std::string> const& img_ids,
     Bs.push_back(B);
     offsets.push_back(img_offsets);
     valid_images.push_back(n);
+    retval.image_success_[n] = true;
     if (debug_mode_) {
       vertex_indices_dbg[n] = std::move(vertex_indices);
     }
@@ -414,9 +425,8 @@ estimate_coefficients(std::vector<std::string> const& img_ids,
   }
   else {
     std::cerr << "Error: D matrix has " << D.cols() << " columns." << std::endl;
-    return false;
+    return retval;
   }
-  std::cout << "coeffs_raw = " << coeffs_raw << std::endl;
   vnl_vector<double> subject_coeffs(num_subject_components, 0.0);
 
   for (int i=0; i<num_subject_components; ++i) {
@@ -456,7 +466,8 @@ estimate_coefficients(std::vector<std::string> const& img_ids,
       }
   }
 
-  return true;
+  retval.success_ = true;
+  return retval;
 }
 
 }

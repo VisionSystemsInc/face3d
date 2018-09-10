@@ -248,7 +248,7 @@ wrap_estimate_coefficients_from_pncc_and_offsets( face3d::media_coefficient_from
 }
 
 template<class CAM_T>
-face3d::subject_sighting_coefficients<CAM_T>
+std::tuple<face3d::subject_sighting_coefficients<CAM_T>, face3d::estimation_results_t>
 wrap_estimate_coefficients_from_pncc( face3d::media_coefficient_from_semantic_map_estimator &estimator,
                                                   std::vector<std::string> const& img_ids,
                                                   std::vector<py::array_t<float> > &pnccs)
@@ -262,11 +262,11 @@ wrap_estimate_coefficients_from_pncc( face3d::media_coefficient_from_semantic_ma
     pybind_util::img_from_buffer(pnccs[i], pnccs_dlib[i]);
   }
   subject_sighting_coefficients<CAM_T> coeffs;
-  bool retval = estimator.estimate_coefficients(img_ids, pnccs_dlib, coeffs);
+  face3d::estimation_results_t retval = estimator.estimate_coefficients(img_ids, pnccs_dlib, coeffs);
   if (!retval) {
     std::cerr << "WARNING: media_coefficient_from_PNCC_estimator::estimate_coefficients() returned error" <<std::endl;
   }
-  return coeffs;
+  return std::make_tuple(coeffs, retval);
 }
 
 py::array_t<unsigned char>
