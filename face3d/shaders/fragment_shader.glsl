@@ -5,6 +5,7 @@ layout (location=1) out vec3 pos;
 layout (location=2) out vec3 norm;
 layout (location=3) out int face_idx;
 layout (location=4) out vec3 face_bc;
+layout (location=5) out vec3 uv;
 
 in vec2 vert_uv;
 in vec3 vert_normal;
@@ -29,4 +30,5 @@ void main()
   norm = vert_normal_unit;
   face_idx = gl_PrimitiveID;
   face_bc = vert_bc;
+  uv = vec3(vert_uv.xy, 1.0f);
 }

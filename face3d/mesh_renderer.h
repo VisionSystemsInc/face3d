@@ -40,6 +40,7 @@ struct render_aux_out
   dlib::array2d<vgl_vector_3d<float> > *normals_ = nullptr;
   dlib::array2d<GLint> *face_idx_ = nullptr;
   dlib::array2d<vgl_point_3d<float> > *face_bc_ = nullptr;
+  dlib::array2d<vgl_point_3d<float> > *uv_ = nullptr;
 };
 
 class mesh_renderer
@@ -235,7 +236,7 @@ bool face3d::mesh_renderer::render(std::vector<face3d::textured_triangle_mesh<TE
   }
   make_context_current();
 
-  GLuint color_tex, pt_tex, norm_tex, face_idx_tex, face_bc_tex, depth_tex;
+  GLuint color_tex, pt_tex, norm_tex, face_idx_tex, face_bc_tex, uv_tex, depth_tex;
 
   glGenTextures(1, &color_tex);
   glBindTexture(GL_TEXTURE_2D, color_tex);
@@ -279,13 +280,22 @@ bool face3d::mesh_renderer::render(std::vector<face3d::textured_triangle_mesh<TE
   glBindTexture(GL_TEXTURE_2D, face_idx_tex);
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
   glTexImage2D(GL_TEXTURE_2D, 0, GL_R32I, nx, ny, 0, GL_RED_INTEGER, GL_INT, NULL);
   check_gl_error(__FILE__, __LINE__);
 
   glGenTextures(1, &face_bc_tex);
   glBindTexture(GL_TEXTURE_2D, face_bc_tex);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+  glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB16F, nx, ny, 0, GL_RGB, GL_FLOAT, NULL);
+  check_gl_error(__FILE__, __LINE__);
+
+  glGenTextures(1, &uv_tex);
+  glBindTexture(GL_TEXTURE_2D, uv_tex);
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
@@ -302,6 +312,7 @@ bool face3d::mesh_renderer::render(std::vector<face3d::textured_triangle_mesh<TE
   glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT2, GL_TEXTURE_2D, norm_tex, 0);
   glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT3, GL_TEXTURE_2D, face_idx_tex, 0);
   glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT4, GL_TEXTURE_2D, face_bc_tex, 0);
+  glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT5, GL_TEXTURE_2D, uv_tex, 0);
   check_gl_error(__FILE__, __LINE__);
 
   //-------------------------
@@ -309,8 +320,8 @@ bool face3d::mesh_renderer::render(std::vector<face3d::textured_triangle_mesh<TE
   glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, depth_tex, 0);
   check_gl_error(__FILE__, __LINE__);
 
-  GLuint draw_buffers[] = {GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1, GL_COLOR_ATTACHMENT2, GL_COLOR_ATTACHMENT3, GL_COLOR_ATTACHMENT4};
-  glDrawBuffers(5, draw_buffers);
+  GLuint draw_buffers[] = {GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1, GL_COLOR_ATTACHMENT2, GL_COLOR_ATTACHMENT3, GL_COLOR_ATTACHMENT4, GL_COLOR_ATTACHMENT5};
+  glDrawBuffers(6, draw_buffers);
   check_gl_error(__FILE__, __LINE__);
 
   GLenum errcode;
@@ -445,6 +456,23 @@ bool face3d::mesh_renderer::render(std::vector<face3d::textured_triangle_mesh<TE
     check_gl_error(__FILE__, __LINE__);
   }
 
+  // READ UV coordinates
+  if (aux_out.uv_) {
+    aux_out.uv_->set_size(ny,nx);
+    glReadBuffer(GL_COLOR_ATTACHMENT5);
+    std::vector<GLfloat> buff_4DF(nx*ny*4);
+    glReadPixels(0,0, nx, ny, GL_RGBA, GL_FLOAT, &(buff_4DF[0]));
+    const GLfloat* buff_ptr = &(buff_4DF[0]);
+    vgl_point_3d<float> *uv_ptr = &((*aux_out.uv_)[0][0]);
+    for (int yi=0; yi<ny; ++yi) {
+      for (int xi=0; xi<nx; ++xi) {
+        *uv_ptr++ = vgl_point_3d<float>(*buff_ptr, *(buff_ptr+1), *(buff_ptr+2));
+        buff_ptr += 4;
+      }
+    }
+    check_gl_error(__FILE__, __LINE__);
+  }
+
   // READ DEPTH BACK
   last_depth_.set_size(ny, nx);
   glBindTexture(GL_TEXTURE_2D, depth_tex);
@@ -458,6 +486,7 @@ bool face3d::mesh_renderer::render(std::vector<face3d::textured_triangle_mesh<TE
   glDeleteTextures(1,&depth_tex);
   glDeleteTextures(1,&face_idx_tex);
   glDeleteTextures(1,&face_bc_tex);
+  glDeleteTextures(1,&uv_tex);
   // unbind fb by switching to 0 (back buffer)
   glBindFramebuffer(GL_FRAMEBUFFER, 0);
   glDeleteFramebuffers(1, &fb);
