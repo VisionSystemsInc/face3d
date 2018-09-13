@@ -325,17 +325,19 @@ bool face3d::mesh_renderer::render(std::vector<face3d::textured_triangle_mesh<TE
   check_gl_error(__FILE__, __LINE__);
 
   GLenum errcode;
-  if((errcode = glCheckFramebufferStatus(GL_FRAMEBUFFER)) != GL_FRAMEBUFFER_COMPLETE) {
-    std::cerr << "ERROR: Framebuffer status != GL_FRAMEBUFFER_COMPLETE" << std::endl;
-    std::cerr << "glCheckFramebufferStatus returned 0x" << std::hex << errcode << std::dec << std::endl;
-    check_gl_error(__FILE__, __LINE__);
-    return false;
+  {
+    std::lock_guard<std::mutex> guard(this->renderer_mutex_);
+    if((errcode = glCheckFramebufferStatus(GL_FRAMEBUFFER)) != GL_FRAMEBUFFER_COMPLETE) {
+      std::cerr << "ERROR: Framebuffer status != GL_FRAMEBUFFER_COMPLETE" << std::endl;
+      std::cerr << "glCheckFramebufferStatus returned 0x" << std::hex << errcode << std::dec << std::endl;
+      check_gl_error(__FILE__, __LINE__);
+      return false;
+    }
+    else {
+      if (debug_mode_)
+        std::cout << "Framebuffer complete." << std::endl;
+    }
   }
-  else {
-    if (debug_mode_)
-      std::cout << "Framebuffer complete." << std::endl;
-  }
-
   ///  RENDER
   glViewport(0, 0, nx, ny);
 
@@ -563,13 +565,15 @@ render_to_texture(std::vector<face3d::textured_triangle_mesh<TEX_T> > const& mes
     glDrawBuffers(1, draw_buffers);
 
     GLenum errcode;
-    if((errcode = glCheckFramebufferStatus(GL_FRAMEBUFFER)) != GL_FRAMEBUFFER_COMPLETE) {
-      std::cerr << "ERROR: Framebuffer status != GL_FRAMEBUFFER_COMPLETE" << std::endl;
-      std::cerr << "glCheckFramebufferStatus returned 0x" << std::hex << errcode << std::dec << std::endl;
-      check_gl_error(__FILE__, __LINE__);
-      return false;
+    {
+      std::lock_guard<std::mutex> guard(this->renderer_mutex_);
+      if((errcode = glCheckFramebufferStatus(GL_FRAMEBUFFER)) != GL_FRAMEBUFFER_COMPLETE) {
+        std::cerr << "ERROR: Framebuffer status != GL_FRAMEBUFFER_COMPLETE" << std::endl;
+        std::cerr << "glCheckFramebufferStatus returned 0x" << std::hex << errcode << std::dec << std::endl;
+        check_gl_error(__FILE__, __LINE__);
+        return false;
+      }
     }
-
     ///  RENDER
     glViewport(0, 0, tex_nx, tex_ny);
 
