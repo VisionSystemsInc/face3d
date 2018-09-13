@@ -25,6 +25,7 @@ set(FACE3D_SOURCES
   pose_jitterer.h pose_jitterer.cxx
   face3d_cuda_context.h face3d_cuda_context.cxx
   coeffs_to_pixmap.h coeffs_to_pixmap.cxx
+  estimation_results.h
   ${GLAD_SOURCES}
   )
 if(FACE3D_USE_CUDA)
