@@ -63,7 +63,7 @@ include_directories(${DLIB_SRC_DIR})
 # raise a compiler error if any LPGL code is including from Eigen
 add_definitions("-DEIGEN_MPL2_ONLY")
 set(libigl_SRC_DIR ${CMAKE_CURRENT_SOURCE_DIR}/external/libigl)
-list(APPEND CMAKE_MODULE_PATH "${libigl_SRC_DIR}/shared/cmake")
+list(APPEND CMAKE_MODULE_PATH "${libigl_SRC_DIR}/cmake")
 
 set(LIBIGL_USE_STATIC_LIBRARY OFF CACHE BOOL "Use LibIGL as static library" FORCE)
 set(LIBIGL_WITH_VIEWER OFF CACHE BOOL "Use OpenGL viewer"  FORCE)
