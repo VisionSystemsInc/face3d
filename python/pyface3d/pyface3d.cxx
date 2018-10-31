@@ -151,6 +151,16 @@ wrap_triangle_mesh_UV(face3d::triangle_mesh const& mesh)
   return UV_py;
 }
 
+py::array_t<double>
+wrap_triangle_mesh_N(face3d::triangle_mesh const& mesh)
+{
+  triangle_mesh::NTYPE const&N = mesh.N();
+  py::array_t<double> N_py;
+  pybind_util::matrix_to_buffer(N, N_py);
+  return N_py;
+}
+
+
 py::array_t<int>
 wrap_triangle_mesh_F(face3d::triangle_mesh const& mesh)
 {
@@ -325,6 +335,23 @@ wrap_render_3d(face3d::mesh_renderer &renderer,
 
 template<class CAM_T, class TEX_T>
 py::array_t<float>
+wrap_render_normals(face3d::mesh_renderer &renderer,
+                    std::vector<face3d::textured_triangle_mesh<TEX_T> > const& meshes,
+                    CAM_T const& cam_params)
+{
+  dlib::array2d<vgl_vector_3d<float> > normals;
+  face3d::render_aux_out aux_out;
+  aux_out.normals_ = &normals;
+  dlib::array2d<dlib::rgb_alpha_pixel> img;
+  renderer.render(meshes, cam_params, img, aux_out);
+  py::array_t<float> py_normals;
+  pybind_util::img_to_buffer(normals, py_normals);
+  return py_normals;
+}
+
+
+template<class CAM_T, class TEX_T>
+py::array_t<float>
 wrap_render_uv(face3d::mesh_renderer &renderer,
                std::vector<face3d::textured_triangle_mesh<TEX_T> > const& meshes,
                CAM_T const& cam_params)
@@ -366,6 +393,15 @@ void wrap_set_texture(face3d::textured_triangle_mesh<TEX_T> &mesh,
     throw std::runtime_error("Unexpected number of planes in texture image");
   }
   return;
+}
+
+template<class TEX_T>
+py::array_t<unsigned char> wrap_get_texture(face3d::textured_triangle_mesh<TEX_T> &mesh)
+{
+  TEX_T const& tex = mesh.texture();
+  py::array_t<unsigned char> py_tex_out;
+  pybind_util::img_to_buffer(tex, py_tex_out);
+  return py_tex_out;
 }
 
 template<class CAM_T>
@@ -650,6 +686,7 @@ PYBIND11_MODULE(face3d, m)
     .def("V", &wrap_triangle_mesh_V)
     .def("F", &wrap_triangle_mesh_F)
     .def("UV", &wrap_triangle_mesh_UV)
+    .def("N", &wrap_triangle_mesh_N)
     .def("vertex", &face3d::triangle_mesh::vertex)
     .def("vertex_tex", &face3d::triangle_mesh::vertex_tex)
     .def("face", &face3d::triangle_mesh::face)
@@ -661,7 +698,8 @@ PYBIND11_MODULE(face3d, m)
     .def("__init__", construct_textured_triangle_mesh)
     .def_property_readonly("num_faces", &face3d::textured_triangle_mesh<MESH_TEX_T>::num_faces)
     .def_property_readonly("num_vertices", &face3d::textured_triangle_mesh<MESH_TEX_T>::num_vertices)
-    .def("set_texture", &wrap_set_texture<MESH_TEX_T>);
+    .def("set_texture", &wrap_set_texture<MESH_TEX_T>)
+    .def("texture", &wrap_get_texture<MESH_TEX_T>);
 
   py::class_<face3d::head_mesh>(m, "head_mesh")
     .def(py::init<std::string>())
@@ -698,6 +736,8 @@ PYBIND11_MODULE(face3d, m)
     .def("render_3d", &wrap_render_3d<perspective_camera_parameters<double>, MESH_TEX_T>)
     .def("render_uv", &wrap_render_uv<ortho_camera_parameters<double>, MESH_TEX_T>)
     .def("render_uv", &wrap_render_uv<perspective_camera_parameters<double>, MESH_TEX_T>)
+    .def("render_normals", &wrap_render_normals<ortho_camera_parameters<double>, MESH_TEX_T>)
+    .def("render_normals", &wrap_render_normals<perspective_camera_parameters<double>, MESH_TEX_T>)
     .def("render_2d", &wrap_render_2d)
     .def("set_ambient_weight", &face3d::mesh_renderer::set_ambient_weight)
     .def("set_light_dir", &face3d::mesh_renderer::set_light_dir);
