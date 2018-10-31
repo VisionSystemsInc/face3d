@@ -339,7 +339,7 @@ void face3d::mask_mesh_faces(triangle_mesh const& mesh, dlib::array2d<unsigned c
     // if any of the boundary points are within mask, don't bother scanning interior
     for (auto bp : {ti.a, ti.b, ti.c}) {
       int bx = static_cast<int>(bp.x);
-      int by = static_cast<int>(bp.y);
+      int by = ny - static_cast<int>(bp.y);
       if ((bx >= 0) && (bx < nx) && (by >= 0) && (by < ny) && texmask[by][bx]) {
         good_face = true;
       }
@@ -348,7 +348,7 @@ void face3d::mask_mesh_faces(triangle_mesh const& mesh, dlib::array2d<unsigned c
       if (good_face) {
         break;
       }
-      int y = ti.scany();
+      int y = ny - ti.scany();
       if ( (y < 0) || (y >= ny) ) {
         continue;
       }
