@@ -38,12 +38,11 @@ SET(CMAKE_POSITION_INDEPENDENT_CODE TRUE)
 
 # setup vxl
 set(vxl_SRC_DIR ${CMAKE_CURRENT_SOURCE_DIR}/external/vxl)
-set(vxl_CMAKE_DIR ${vxl_SRC_DIR}/config/cmake/Modules)
 set(WITH_FFMPEG FALSE CACHE BOOL "Include FFMPEG support if available")
 set(VXL_USE_GEOTIFF FALSE CACHE BOOL "Use the GEOTIFF Library if available")
 add_subdirectory(${vxl_SRC_DIR} EXCLUDE_FROM_ALL)
-set(VXL_CORE_INCLUDE_DIR ${vxl_BINARY_DIR}/core ${vxl_SRC_DIR}/core)
-set(VXL_VCL_INCLUDE_DIR ${vxl_BINARY_DIR}/vcl ${vxl_SRC_DIR}/vcl)
+set(VXL_CORE_INCLUDE_DIR ${VXL_BINARY_DIR}/core ${vxl_SRC_DIR}/core)
+set(VXL_VCL_INCLUDE_DIR ${VXL_BINARY_DIR}/vcl ${vxl_SRC_DIR}/vcl)
 include_directories(${VXL_CORE_INCLUDE_DIR})
 include_directories(${VXL_VCL_INCLUDE_DIR})
 
