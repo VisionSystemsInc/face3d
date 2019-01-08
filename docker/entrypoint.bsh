@@ -1,0 +1,8 @@
+#!/bin/bash
+set -eu
+# run the passed command inside the virtualenv
+useradd -s /bin/bash -N -u ${user_id-1000} -o face3d_user
+chown -R face3d_user /face3d/build
+chown -R face3d_user /home/face3d_user/
+cd /home/face3d_user
+exec gosu face3d_user "$@"

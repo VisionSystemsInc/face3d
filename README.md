@@ -4,7 +4,13 @@ __Note:__ For a complete 3D face geometry estimation and rendering solution with
 
 This project contains code related to estimation of 3D face shape from one or more unconstrained images.
 The project is meant to be used mainly as a submodule of other, larger projects.
+## Docker Build
 
+```
+./docker/build-docker-image.bsh
+./docker/build-face3d-source.bsh
+./docker/run-face3d-interactively.bsh
+```
 
 ## Citation
 If you find this software useful, please consider referencing:

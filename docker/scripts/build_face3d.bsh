@@ -1,0 +1,5 @@
+#!/usr/bin/env bash
+cd /face3d/build
+#rm -rf *
+cmake .. -DEGL_INCLUDE_DIR=/face3d/external/EGL-Registry/api -GNinja
+gosu root ninja install

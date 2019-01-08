@@ -1,0 +1,10 @@
+#!/usr/bin/env bash
+set -eu
+
+DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+FACE3D_IMAGE=face3d
+docker-compose -f ${DIR}/docker-compose.yml run --rm \
+               -e user_id=$(id -u $(whoami)) \
+               -e USER=face3d_user \
+               $FACE3D_IMAGE \
+               /face3d/docker/scripts/build_face3d.bsh
