@@ -6,11 +6,11 @@ services:
       dockerfile: Dockerfile
     image: face3d:face3d_main
     environment:
-      # Variables for docker_entrypoint.bsh
       - DOCKER_USERNAME=face3d_user
       - DISPLAY
       - MXNET_CUDNN_AUTOTUNE_DEFAULT=0
       - MXNET_ENABLE_GPU_P2P=0
+      - PYTHONPATH=/face3d/install/python
     volumes:
       - type: volume
         source: home
@@ -21,6 +21,9 @@ services:
       - type: volume
         source: face3d_build
         target: /face3d/build
+      - type: volume
+        source: face3d_install
+        target: /face3d/install
       - type: bind
         source: /tmp/.X11-unix
         target: /tmp/.X11-unix
@@ -28,3 +31,4 @@ services:
 volumes:
   home:
   face3d_build:
+  face3d_install:
