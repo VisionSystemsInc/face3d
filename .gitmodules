@@ -13,6 +13,3 @@
 [submodule "external/libigl"]
 	path = external/libigl
 	url = https://github.com/libigl/libigl.git
-[submodule "external/EGL-Registry"]
-	path = external/EGL-Registry
-	url = https://github.com/KhronosGroup/EGL-Registry.git

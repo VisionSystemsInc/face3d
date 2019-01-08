@@ -1,5 +1,0 @@
-#!/usr/bin/env bash
-cd /face3d/build
-rm -rf *
-cmake .. -DEGL_INCLUDE_DIR=/face3d/external/EGL-Registry/api -DPYTHON_SITE=/face3d/install/python -DCMAKE_INSTALL_PREFIX=/face3d/install -GNinja
-ninja install
