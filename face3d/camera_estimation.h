@@ -23,9 +23,27 @@ bool compute_camera_params(std::vector<vgl_point_2d<double> > const& pts2d,
                            int nx, int ny,
                            ortho_camera_parameters<double> &cam_params);
 
+// The semantics of this function are nonsensical, but it needs to be defined to
+// satisfy the compiler due to the optional focal_length specification in the
+// coefficient estimator.
+// TODO: refactor so this hack is not necessary.
 bool compute_camera_params(std::vector<vgl_point_2d<double> > const& pts2d,
                            std::vector<vgl_point_3d<double> > const& pts3d,
                            int nx, int ny,
+                           double focal_len,
+                           vgl_point_2d<double> principal_pt,
+                           ortho_camera_parameters<double> &cam_params);
+
+bool compute_camera_params(std::vector<vgl_point_2d<double> > const& pts2d,
+                           std::vector<vgl_point_3d<double> > const& pts3d,
+                           int nx, int ny,
+                           perspective_camera_parameters<double> &cam_params);
+
+bool compute_camera_params(std::vector<vgl_point_2d<double> > const& pts2d,
+                           std::vector<vgl_point_3d<double> > const& pts3d,
+                           int nx, int ny,
+                           double focal_len,
+                           vgl_point_2d<double> principal_pt,
                            perspective_camera_parameters<double> &cam_params);
 
 template<class T, class CAM_T>

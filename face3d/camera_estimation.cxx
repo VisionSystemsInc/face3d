@@ -35,28 +35,6 @@ compute_camera_params(std::vector<vgl_point_2d<double> > const& pts2d,
   for (auto p : pts3d) {
     hpts3d.push_back(vgl_homg_point_3d<double>(p));
   }
-#if 0
-  vpgl_perspective_camera<double> unconstrained_cam;
-  double err;
-  if (!vpgl_perspective_camera_compute::compute_dlt(pts2d, pts3d, unconstrained_cam, err)) {
-    std::cerr << "vpgl_perspective_camera_compute::compute_dlt failed." << std::endl;
-    return false;
-  }
-  vpgl_calibration_matrix<double> uK = unconstrained_cam.get_calibration();
-  uK.set_skew(0.0);
-  vpgl_perspective_camera<double> constrained_cam = unconstrained_cam;
-  constrained_cam.set_calibration(uK);
-  constrained_cam = vpgl_optimize_camera::opt_orient_pos_cal(constrained_cam, hpts3d, pts2d);
-  cam_params.from_camera(constrained_cam, nx, ny);
-
-  cam_params.to_camera(constrained_cam);
-  vpgl_calibration_matrix<double> K = constrained_cam.get_calibration();
-
-  constrained_cam = vpgl_optimize_camera::opt_orient_pos(constrained_cam, hpts3d, pts2d);
-
-  // extract the new camera. K should be unchanged.
-  cam_params.from_camera(constrained_cam, nx, ny);
-#else
   vpgl_affine_camera<double> affine_cam;
   vpgl_affine_camera_compute::compute(pts2d, pts3d, affine_cam);
 
@@ -73,9 +51,50 @@ compute_camera_params(std::vector<vgl_point_2d<double> > const& pts2d,
   const double xtol = 1e-3;
   vpgl_perspective_camera<double> cam = vpgl_optimize_camera::opt_orient_pos_f(cam_init, hpts3d, pts2d, xtol);
   cam_params.from_camera(cam, nx, ny);
-#endif
 
   return true;
+}
+
+bool face3d::camera_estimation::
+compute_camera_params(std::vector<vgl_point_2d<double> > const& pts2d,
+                      std::vector<vgl_point_3d<double> > const& pts3d,
+                      int nx, int ny,
+                      double focal_len,
+                      vgl_point_2d<double> principal_pt,
+                      perspective_camera_parameters<double> &cam_params)
+{
+  std::vector<vgl_homg_point_3d<double> > hpts3d;
+  for (auto p : pts3d) {
+    hpts3d.push_back(vgl_homg_point_3d<double>(p));
+  }
+  vpgl_affine_camera<double> affine_cam;
+  vpgl_affine_camera_compute::compute(pts2d, pts3d, affine_cam);
+
+  ortho_camera_parameters<double> ortho_cam;
+  ortho_cam.from_camera(affine_cam, nx, ny);
+
+  vgl_rotation_3d<double> R_init(ortho_cam.rotation());
+  double D_init = focal_len / ortho_cam.scale();
+  vgl_vector_3d<double> T_init(0,0,D_init);
+  std::cout << "D_init = " << D_init << std::endl;
+  vpgl_calibration_matrix<double> K(focal_len, principal_pt);
+  vpgl_perspective_camera<double> cam_init(K, R_init, T_init);
+  vpgl_perspective_camera<double> cam = vpgl_optimize_camera::opt_orient_pos(cam_init, hpts3d, pts2d);
+  cam_params.from_camera(cam, nx, ny);
+
+  return true;
+}
+
+bool face3d::camera_estimation::
+compute_camera_params(std::vector<vgl_point_2d<double> > const& pts2d,
+                      std::vector<vgl_point_3d<double> > const& pts3d,
+                      int nx, int ny,
+                      double focal_len,
+                      vgl_point_2d<double> principal_pt,
+                      ortho_camera_parameters<double> &cam_params)
+
+{
+  throw std::runtime_error("Orthographic cameras do not have a finite focal length");
 }
 
 bool face3d::camera_estimation::compute_camera_params_calibrated::
@@ -103,6 +122,7 @@ operator()(std::vector<vgl_point_2d<double> > const& pts2d,
     hpts3d.push_back(vgl_homg_point_3d<double>(p));
   }
   vpgl_calibration_matrix<double> K = constrained_cam.get_calibration();
+
 
   constrained_cam = vpgl_optimize_camera::opt_orient_pos(constrained_cam, hpts3d, pts2d);
   //constrained_cam = vpgl_optimize_camera::opt_orient_pos_cal(constrained_cam, hpts3d, pts2d);

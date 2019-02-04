@@ -718,7 +718,12 @@ PYBIND11_MODULE(face3d, m)
     .def_readonly("vertices_found", &face3d::estimation_results_t::vertices_found_);
 
   py::class_<face3d::media_coefficient_from_PNCC_and_offset_estimator>(m, "media_coefficient_from_PNCC_and_offset_estimator")
-    .def(py::init<face3d::head_mesh, vnl_matrix<double> const&, vnl_matrix<double> const&, vnl_matrix<double> const&, vnl_matrix<double> const&, bool, std::string>())
+    .def(py::init<face3d::head_mesh, vnl_matrix<double> const&, vnl_matrix<double> const&, vnl_matrix<double> const&, vnl_matrix<double> const&, bool, std::string, double>(),
+         py::arg("mesh"),
+         py::arg("subject_pca_components"), py::arg("expression_pca_components"),
+         py::arg("subject_pca_ranges"), py::arg("expression_pca_ranges"),
+         py::arg("debug_mode"), py::arg("debug_dir"),
+         py::arg("fixed_focal_len") = -1.0)
     .def("estimate_coefficients_ortho", &wrap_estimate_coefficients_from_pncc_and_offsets<face3d::ortho_camera_parameters<double> >)
     .def("estimate_coefficients_perspective", &wrap_estimate_coefficients_from_pncc_and_offsets<face3d::perspective_camera_parameters<double> >);
 
