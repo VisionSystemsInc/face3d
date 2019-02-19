@@ -235,8 +235,7 @@ estimate_coefficients(std::string const& img_ids,
   for (int n=0; n<num_images; ++n) {
     vnl_vector<double> these_expression_coeffs(num_expression_components,0.0);
     for (int i=0; i<num_expression_components; ++i) {
-      int raw_idx = num_subject_components + n*num_expression_components + i;
-      these_expression_coeffs[i] = expression_coeffs_raw[raw_idx];
+      these_expression_coeffs[i] = expression_coeffs_raw[i];
     }
     expression_coeffs.push_back(these_expression_coeffs);
   }
