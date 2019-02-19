@@ -87,14 +87,23 @@ set(LIBIGL_INCLUDE_DIR ${libigl_SRC_DIR}/include)
 set(GLFW_INCLUDE_DIR ${libigl_SRC_DIR}/external/glfw/include)
 include_directories(${LIBIGL_INCLUDE_DIR} ${GLFW_INCLUDE_DIR})
 
-# Use libigl's version of Eigen
-set(EIGEN_INCLUDE_DIR ${libigl_SRC_DIR}/external/eigen)
+# # Use libigl's version of Eigen
+# set(EIGEN_INCLUDE_DIR ${libigl_SRC_DIR}/external/eigen)
+# message(STATUS "EIGEN_INCLUDE_DIR=${EIGEN_INCLUDE_DIR}")
+# include_directories(${EIGEN_INCLUDE_DIR})
+
+set(EOS_SRC_DIR ${CMAKE_CURRENT_SOURCE_DIR}/external/eos CACHE PATH "root eos directory")
+set(EOS_BUILD_EXAMPLES ON CACHE BOOL "EOS Examples")
+set(EOS_BUILD_UTILS ON CACHE BOOL "EOS Utils")
+set(EOS_GENERATE_PYTHON_BINDINGS OFF CACHE BOOL "EOS py-bindings") # missing X11 header under anaconda)
+
+# # Use eos's version of Eigen
+set(EIGEN_INCLUDE_DIR ${EOS_SRC_DIR}/3rdparty/eigen)
 message(STATUS "EIGEN_INCLUDE_DIR=${EIGEN_INCLUDE_DIR}")
 include_directories(${EIGEN_INCLUDE_DIR})
 
-
-
-
+add_subdirectory(${EOS_SRC_DIR})
+include_directories(${EOS_SRC_DIR}/include)
 
 include_directories(${CMAKE_CURRENT_LIST_DIR})
 add_subdirectory(face3d_basic)

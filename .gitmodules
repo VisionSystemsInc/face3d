@@ -13,3 +13,6 @@
 [submodule "external/libigl"]
 	path = external/libigl
 	url = https://github.com/libigl/libigl.git
+[submodule "external/eos"]
+	path = external/eos
+	url = https://github.com/patrikhuber/eos.git

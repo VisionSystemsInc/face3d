@@ -9,6 +9,7 @@
 #include <face3d_basic/dlib_face_detector.h>
 #include <face3d/media_coefficient_from_semantic_map_estimator.h>
 #include <face3d/media_coefficient_from_PNCC_and_offset_estimator.h>
+#include <face3d/media_coefficient_from_PNCC_and_offset_estimator_eos.h>
 #include <face3d/media_jitterer.h>
 #include <face3d/offset_correction.h>
 #include <face3d/mesh_renderer.h>
@@ -256,6 +257,37 @@ wrap_estimate_coefficients_from_pncc_and_offsets( face3d::media_coefficient_from
   }
   return std::make_tuple(coeffs, retval);
 }
+
+template<class CAM_T>
+std::tuple<face3d::subject_sighting_coefficients<CAM_T>, face3d::estimation_results_t>
+wrap_estimate_coefficients_from_pncc_and_offsets_eos( face3d::media_coefficient_from_PNCC_and_offset_estimator_eos &estimator,
+                                                  std::vector<std::string> const& img_ids,
+                                                  std::vector<py::array_t<float> > &pnccs,
+                                                  std::vector<py::array_t<float> > &offsets,
+                                                  std::string image_fname,
+                                                  std::string matrix_fp)
+{
+  const int num_imgs = img_ids.size();
+  if (pnccs.size() != num_imgs) {
+    throw std::logic_error("Different number of image IDs and pnccs passed to estimate_coefficients");
+  }
+  if (offsets.size() != num_imgs) {
+    throw std::logic_error("Different number of image IDs and offsets passed to estimate_coefficients");
+  }
+  std::vector<dlib::array2d<vgl_point_3d<float> > > pnccs_dlib(num_imgs);
+  std::vector<dlib::array2d<vgl_vector_3d<float>> > offsets_dlib(num_imgs);
+  for (int i=0; i<num_imgs; ++i) {
+    pybind_util::img_from_buffer(pnccs[i], pnccs_dlib[i]);
+    pybind_util::img_from_buffer(offsets[i], offsets_dlib[i]);
+  }
+  subject_sighting_coefficients<CAM_T> coeffs;
+  face3d::estimation_results_t retval = estimator.estimate_coefficients(img_ids[0], pnccs_dlib[0], offsets_dlib[0], coeffs, image_fname, matrix_fp);
+  if (!retval) {
+    std::cerr << "WARNING: media_coefficient_from_PNCC_and_offset_estimator_eos::estimate_coefficients() returned error" <<std::endl;
+  }
+  return std::make_tuple(coeffs, retval);
+}
+
 
 template<class CAM_T>
 std::tuple<face3d::subject_sighting_coefficients<CAM_T>, face3d::estimation_results_t>
@@ -726,6 +758,15 @@ PYBIND11_MODULE(face3d, m)
          py::arg("fixed_focal_len") = -1.0)
     .def("estimate_coefficients_ortho", &wrap_estimate_coefficients_from_pncc_and_offsets<face3d::ortho_camera_parameters<double> >)
     .def("estimate_coefficients_perspective", &wrap_estimate_coefficients_from_pncc_and_offsets<face3d::perspective_camera_parameters<double> >);
+
+   py::class_<face3d::media_coefficient_from_PNCC_and_offset_estimator_eos>(m, "media_coefficient_from_PNCC_and_offset_estimator_eos")
+     .def(py::init<face3d::head_mesh, std::string, std::string, bool, std::string, double>(),
+         py::arg("mesh"),
+         py::arg("model_filename"), py::arg("blendshapes_filename"),
+         py::arg("debug_mode"), py::arg("debug_dir"),
+         py::arg("fixed_focal_len") = -1.0)
+    .def("estimate_coefficients_ortho", &wrap_estimate_coefficients_from_pncc_and_offsets_eos<face3d::ortho_camera_parameters<double> >)
+    .def("estimate_coefficients_perspective", &wrap_estimate_coefficients_from_pncc_and_offsets_eos<face3d::perspective_camera_parameters<double> >);
 
   py::class_<face3d::media_coefficient_from_semantic_map_estimator>(m, "media_coefficient_from_PNCC_estimator")
     .def(py::init<face3d::head_mesh, vnl_matrix<double> const&, vnl_matrix<double> const&, vnl_matrix<double> const&, vnl_matrix<double> const&, bool, std::string>())
