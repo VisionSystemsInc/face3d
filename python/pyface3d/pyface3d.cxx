@@ -279,28 +279,6 @@ wrap_estimate_coefficients_from_pncc( face3d::media_coefficient_from_semantic_ma
   return std::make_tuple(coeffs, retval);
 }
 
-template<class CAM_T>
-std::tuple<face3d::subject_sighting_coefficients<CAM_T>, face3d::estimation_results_t>
-wrap_estimate_coefficients_from_pncc_nonlin( face3d::media_coefficient_from_semantic_map_estimator &estimator,
-                                                  std::vector<std::string> const& img_ids,
-                                                  std::vector<py::array_t<float> > &pnccs)
-{
-  const int num_imgs = img_ids.size();
-  if (pnccs.size() != num_imgs) {
-    throw std::logic_error("Different number of image IDs and pnccs passed to estimate_coefficients");
-  }
-  std::vector<dlib::array2d<vgl_point_3d<float> > > pnccs_dlib(num_imgs);
-  for (int i=0; i<num_imgs; ++i) {
-    pybind_util::img_from_buffer(pnccs[i], pnccs_dlib[i]);
-  }
-  subject_sighting_coefficients<CAM_T> coeffs;
-  face3d::estimation_results_t retval = estimator.estimate_coefficients_nonlin(img_ids, pnccs_dlib, coeffs);
-  if (!retval) {
-    std::cerr << "WARNING: media_coefficient_from_PNCC_estimator::estimate_coefficients() returned error" <<std::endl;
-  }
-  return std::make_tuple(coeffs, retval);
-}
-
 py::array_t<unsigned char>
 wrap_render_2d(face3d::mesh_renderer &renderer,
                py::array_t<double> &V, py::array_t<int> &F,
@@ -757,8 +735,7 @@ PYBIND11_MODULE(face3d, m)
          py::arg("debug_mode"), py::arg("debug_dir"),
          py::arg("fixed_focal_len") = -1.0)
     .def("estimate_coefficients_ortho", &wrap_estimate_coefficients_from_pncc<face3d::ortho_camera_parameters<double> >)
-    .def("estimate_coefficients_perspective", &wrap_estimate_coefficients_from_pncc<face3d::perspective_camera_parameters<double> >)
-    .def("estimate_coefficients_perspective_nonlin", &wrap_estimate_coefficients_from_pncc_nonlin<face3d::perspective_camera_parameters<double> >);
+    .def("estimate_coefficients_perspective", &wrap_estimate_coefficients_from_pncc<face3d::perspective_camera_parameters<double> >);
 
   py::class_<face3d::mesh_renderer>(m, "mesh_renderer")
     .def(py::init<>())
