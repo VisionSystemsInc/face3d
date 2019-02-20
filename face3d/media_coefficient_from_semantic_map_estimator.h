@@ -38,7 +38,8 @@ public:
                                                 vnl_matrix<double> const& expression_pca_components,
                                                 vnl_matrix<double> const& subject_pca_ranges,
                                                 vnl_matrix<double> const& expression_pca_ranges,
-                                                bool debug_mode, std::string debug_dir);
+                                                bool debug_mode, std::string debug_dir,
+                                                double fixed_focal_len=-1.0);
 
   template<class T>
     estimation_results_t estimate_coefficients(std::vector<std::string> const& img_ids,
@@ -62,6 +63,7 @@ private:
   const vnl_matrix<double> expression_pca_ranges_;
   bool debug_mode_;
   std::string debug_dir_;
+  double fixed_focal_len_;
 };
 
 template<class CAM_T>
@@ -332,7 +334,13 @@ estimate_coefficients(std::vector<std::string> const& img_ids,
     T cam_params;
     const int nx = semantic_maps[n].nc();
     const int ny = semantic_maps[n].nr();
-    camera_estimation::compute_camera_params(vertex_projections, mesh_vertices, nx, ny, cam_params);
+    if (fixed_focal_len_ > 0) {
+      vgl_point_2d<double> principal_pt(static_cast<double>(nx)/2, static_cast<double>(ny)/2);
+      camera_estimation::compute_camera_params(vertex_projections, mesh_vertices, nx, ny, fixed_focal_len_, principal_pt, cam_params);
+    }
+    else{
+      camera_estimation::compute_camera_params(vertex_projections, mesh_vertices, nx, ny, cam_params);
+    }
     all_cam_params.push_back(cam_params);
 
     const int num_data = mesh_vertices.size();
