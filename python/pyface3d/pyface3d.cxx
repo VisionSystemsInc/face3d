@@ -279,6 +279,30 @@ wrap_estimate_coefficients_from_pncc( face3d::media_coefficient_from_semantic_ma
   return std::make_tuple(coeffs, retval);
 }
 
+template<class CAM_T>
+std::tuple<face3d::subject_sighting_coefficients<CAM_T>, face3d::estimation_results_t>
+wrap_estimate_coefficients_from_pncc_and_cameras( face3d::media_coefficient_from_semantic_map_estimator &estimator,
+                                                  std::vector<std::string> const& img_ids,
+                                                  std::vector<py::array_t<float> > &pnccs,
+                                                  std::vector<CAM_T> const& cameras)
+{
+  const int num_imgs = img_ids.size();
+  if (pnccs.size() != num_imgs) {
+    throw std::logic_error("Different number of image IDs and pnccs passed to estimate_coefficients");
+  }
+  std::vector<dlib::array2d<vgl_point_3d<float> > > pnccs_dlib(num_imgs);
+  for (int i=0; i<num_imgs; ++i) {
+    pybind_util::img_from_buffer(pnccs[i], pnccs_dlib[i]);
+  }
+  subject_sighting_coefficients<CAM_T> coeffs;
+  face3d::estimation_results_t retval = estimator.estimate_coefficients(img_ids, pnccs_dlib, cameras, coeffs);
+  if (!retval) {
+    std::cerr << "WARNING: media_coefficient_from_PNCC_estimator::estimate_coefficients() returned error" <<std::endl;
+  }
+  return std::make_tuple(coeffs, retval);
+}
+
+
 py::array_t<unsigned char>
 wrap_render_2d(face3d::mesh_renderer &renderer,
                py::array_t<double> &V, py::array_t<int> &F,
@@ -661,14 +685,17 @@ PYBIND11_MODULE(face3d, m)
     .def("to_camera", &ortho_camera_parameters_to_camera);
 
   py::class_<face3d::perspective_camera_parameters<double> > (m, "perspective_camera_parameters")
-    // constructor: focal_len, principal_pt, rotation, translation, nx, ny
-    .def(py::init<double, vgl_point_2d<double>, vgl_rotation_3d<double>, vgl_vector_3d<double>, int, int>())
+    .def(py::init<>())
+    .def(py::init<double, vgl_point_2d<double>, vgl_rotation_3d<double>, vgl_vector_3d<double>, int, int>(),
+         py::arg("focal_len"), py::arg("principal_point"), py::arg("rotation"), py::arg("translation"), py::arg("nx"), py::arg("ny"))
     .def_property_readonly("focal_len", &face3d::perspective_camera_parameters<double>::focal_len)
     .def_property_readonly("principal_point", &face3d::perspective_camera_parameters<double>::principal_point, py::return_value_policy::copy)
     .def_property_readonly("rotation", &face3d::perspective_camera_parameters<double>::rotation, py::return_value_policy::copy)
     .def_property_readonly("translation", &face3d::perspective_camera_parameters<double>::translation, py::return_value_policy::copy)
     .def_property_readonly("nx", &face3d::perspective_camera_parameters<double>::nx)
     .def_property_readonly("ny", &face3d::perspective_camera_parameters<double>::ny)
+    .def("from_camera", &face3d::perspective_camera_parameters<double>::from_camera,
+         py::arg("camera"), py::arg("nx"), py::arg("ny"))
     .def("to_camera", &perspective_camera_parameters_to_camera);
 
   wrap_subject_sighting_coefficients<face3d::ortho_camera_parameters<double> >(m, "subject_ortho_sighting_coefficients");
@@ -735,7 +762,8 @@ PYBIND11_MODULE(face3d, m)
          py::arg("debug_mode"), py::arg("debug_dir"),
          py::arg("fixed_focal_len") = -1.0)
     .def("estimate_coefficients_ortho", &wrap_estimate_coefficients_from_pncc<face3d::ortho_camera_parameters<double> >)
-    .def("estimate_coefficients_perspective", &wrap_estimate_coefficients_from_pncc<face3d::perspective_camera_parameters<double> >);
+    .def("estimate_coefficients_perspective", &wrap_estimate_coefficients_from_pncc<face3d::perspective_camera_parameters<double> >)
+    .def("estimate_coefficients_perspective", &wrap_estimate_coefficients_from_pncc_and_cameras<face3d::perspective_camera_parameters<double> >);
 
   py::class_<face3d::mesh_renderer>(m, "mesh_renderer")
     .def(py::init<>())
