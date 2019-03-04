@@ -86,3 +86,18 @@ void face3d::unnormalize_3d_image(vil_image_view<unsigned char> const& in, vgl_b
   return;
 }
 
+face3d::vertex_localizer::
+vertex_localizer(triangle_mesh const& mesh)
+  : mesh_(mesh)
+{
+  mesh_tree_.init(mesh_.V(), mesh_.F());
+}
+
+std::map<int, vgl_point_2d<double> >
+face3d::vertex_localizer::
+operator () ( dlib::array2d<vgl_point_3d<float> > const& semantic_map )
+{
+  std::map<int, vgl_point_2d<double>> vertex_locs;
+  extract_vertex_projections( semantic_map, mesh_, vertex_locs,  mesh_tree_);
+  return vertex_locs;
+}

@@ -13,6 +13,8 @@
 #include <dlib/pixel.h>
 #include <dlib/image_transforms.h>
 
+#include "triangle_mesh.h"
+
 namespace face3d
 {
 
@@ -69,6 +71,10 @@ private:
   vgl_point_2d<double> principal_pt_;
 };
 
+void compute_camera_params_bundle_adjust(std::vector<dlib::array2d<vgl_point_3d<float>>> const& PNCCs,
+                                    face3d::triangle_mesh const& base_mesh,
+                                    std::vector<perspective_camera_parameters<double>> &cameras_out,
+                                    std::vector<vgl_point_3d<double>> &points_out);
 
 // provide a function template for convenience. Compiler will prefer
 // non-templates until template arg is explicitly given.  Needed by

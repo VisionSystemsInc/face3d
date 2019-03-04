@@ -52,6 +52,14 @@ wrap_coeffs_to_pixmap(face3d::head_mesh const& mesh,
   return pixmap_out;
 }
 
+std::map<int, vgl_point_2d<double> >
+wrap_vertex_localizer_call(face3d::vertex_localizer &self, py::array_t<float> &pncc)
+{
+  dlib::array2d<vgl_point_3d<float> > pncc_dlib;
+  pybind_util::img_from_buffer(pncc, pncc_dlib);
+  return self(pncc_dlib);
+}
+
 py::array_t<float>
 wrap_correct_offsets(py::array_t<float> &pncc, py::array_t<float> &offsets)
 {
@@ -227,7 +235,24 @@ CAM_T wrap_compute_camera_params(std::vector<vgl_point_2d<double> > const& pts2d
   return cam_out;
 }
 
-
+std::tuple<std::vector<perspective_camera_parameters<double>>, std::vector<vgl_point_3d<double>>>
+wrap_compute_camera_params_bundle_adjust(std::vector<py::array_t<float>> &PNCCs,
+                                         face3d::triangle_mesh base_mesh)
+{
+  std::vector<dlib::array2d<vgl_point_3d<float>>> PNCCs_dlib;
+  for (auto &PNCC : PNCCs) {
+    dlib::array2d<vgl_point_3d<float> > pncc_dlib;
+    pybind_util::img_from_buffer(PNCC, pncc_dlib);
+    PNCCs_dlib.push_back(std::move(pncc_dlib));
+  }
+  std::vector<perspective_camera_parameters<double>> cams_out;
+  std::vector<vgl_point_3d<double>> pts_out;
+  face3d::camera_estimation::compute_camera_params_bundle_adjust(PNCCs_dlib,
+                                                                 base_mesh,
+                                                                 cams_out,
+                                                                 pts_out);
+  return std::make_tuple(cams_out, pts_out);
+}
 
 template<class CAM_T>
 std::tuple<face3d::subject_sighting_coefficients<CAM_T>, face3d::estimation_results_t>
@@ -390,6 +415,13 @@ wrap_render_uv(face3d::mesh_renderer &renderer,
   return py_img_uv;
 }
 
+void wrap_set_background_color(face3d::mesh_renderer &renderer,
+                               unsigned char red,
+                               unsigned char green,
+                               unsigned char blue)
+{
+  renderer.set_background_color(dlib::rgb_pixel(red,green,blue));
+}
 
 template<class TEX_T>
 void wrap_set_texture(face3d::textured_triangle_mesh<TEX_T> &mesh,
@@ -777,6 +809,7 @@ PYBIND11_MODULE(face3d, m)
     .def("render_normals", &wrap_render_normals<ortho_camera_parameters<double>, MESH_TEX_T>)
     .def("render_normals", &wrap_render_normals<perspective_camera_parameters<double>, MESH_TEX_T>)
     .def("render_2d", &wrap_render_2d)
+    .def("set_background_color", &wrap_set_background_color)
     .def("set_ambient_weight", &face3d::mesh_renderer::set_ambient_weight)
     .def("set_light_dir", &face3d::mesh_renderer::set_light_dir);
 
@@ -810,4 +843,10 @@ PYBIND11_MODULE(face3d, m)
   m.def("set_cuda_device", &face3d::set_cuda_device);
   m.def("get_cuda_device", &face3d::get_cuda_device);
 #endif
+
+  py::class_<face3d::vertex_localizer>(m, "vertex_localizer")
+    .def(py::init<face3d::triangle_mesh const&>())
+    .def("__call__", &wrap_vertex_localizer_call);
+
+  m.def("compute_camera_params_bundle_adjust", &wrap_compute_camera_params_bundle_adjust);
 }
