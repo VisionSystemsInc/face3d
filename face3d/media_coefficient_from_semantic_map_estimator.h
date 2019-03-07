@@ -126,7 +126,7 @@ estimate_coefficients(std::vector<std::string> const& img_ids,
 
   // initialize each view with the mean face mesh.
   std::vector<triangle_mesh> view_meshes(num_images, mean_face_mesh_);
-  const int num_its = 20;
+  const int num_its = 1;
   for (int it=0; it<num_its; ++it) {
 
     std::cout << "ITERATION " << it << std::endl;
@@ -303,8 +303,8 @@ estimate_coefficients(std::vector<std::string> const& img_ids,
     const int num_regularization_terms = num_vars;
     vnl_matrix<double> reg_matrix(num_vars, num_vars);
     reg_matrix.fill(0.0);
-    const double subj_reg_weight = 10.0; // 1e-1;
-    const double expr_reg_weight = 1.0; // 1e-6;
+    const double subj_reg_weight = 0.0; // 1e-1;
+    const double expr_reg_weight = 1000.0; // 1e-6;
     for (int i=0; i<num_subject_components; ++i) {
       reg_matrix(i,i) = subj_reg_weight/subject_pca_ranges_(i,1); // multiplier for subject coeffs
     }
@@ -368,7 +368,6 @@ estimate_coefficients(std::vector<std::string> const& img_ids,
       face3d::io_utils::write_points(projected_verts, opt_verts_filename);
     }
   }
-  
   return true;
 }
 }

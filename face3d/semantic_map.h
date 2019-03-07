@@ -32,7 +32,7 @@ class vertex_localizer
 public:
   vertex_localizer(triangle_mesh const& mesh);
 
-  std::map<int, vgl_point_2d<double> > 
+  std::map<int, vgl_point_2d<double> >
     operator () ( dlib::array2d<vgl_point_3d<float> > const& semantic_map );
 
 private:

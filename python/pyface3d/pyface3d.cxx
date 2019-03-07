@@ -235,9 +235,16 @@ CAM_T wrap_compute_camera_params(std::vector<vgl_point_2d<double> > const& pts2d
   return cam_out;
 }
 
-std::tuple<std::vector<perspective_camera_parameters<double>>, std::vector<vgl_point_3d<double>>>
-wrap_compute_camera_params_bundle_adjust(std::vector<py::array_t<float>> &PNCCs,
-                                         face3d::triangle_mesh base_mesh)
+std::tuple<
+face3d::subject_sighting_coefficients<face3d::perspective_camera_parameters<double>>,
+std::vector<vgl_point_3d<double>>
+  >
+wrap_compute_camera_params_bundle_adjust1(std::vector<py::array_t<float>> &PNCCs,
+                                          vnl_matrix<double> const& subject_pca_components,
+                                          vnl_matrix<double> const& expression_pca_components,
+                                          face3d::head_mesh base_mesh,
+                                          std::vector<face3d::perspective_camera_parameters<double>> const& init_cameras
+                                          )
 {
   std::vector<dlib::array2d<vgl_point_3d<float>>> PNCCs_dlib;
   for (auto &PNCC : PNCCs) {
@@ -245,13 +252,39 @@ wrap_compute_camera_params_bundle_adjust(std::vector<py::array_t<float>> &PNCCs,
     pybind_util::img_from_buffer(PNCC, pncc_dlib);
     PNCCs_dlib.push_back(std::move(pncc_dlib));
   }
-  std::vector<perspective_camera_parameters<double>> cams_out;
   std::vector<vgl_point_3d<double>> pts_out;
+  face3d::subject_sighting_coefficients<face3d::perspective_camera_parameters<double>> coeffs_out;
   face3d::camera_estimation::compute_camera_params_bundle_adjust(PNCCs_dlib,
+                                                                 subject_pca_components,
+                                                                 expression_pca_components,
                                                                  base_mesh,
-                                                                 cams_out,
-                                                                 pts_out);
-  return std::make_tuple(cams_out, pts_out);
+                                                                 init_cameras,
+                                                                 pts_out,
+                                                                 coeffs_out);
+  return std::make_tuple(coeffs_out, pts_out);
+}
+
+std::tuple<
+face3d::subject_sighting_coefficients<face3d::perspective_camera_parameters<double>>,
+std::vector<vgl_point_3d<double>>
+  >
+wrap_compute_camera_params_bundle_adjust2(std::vector<std::map<int, vgl_point_2d<double>>> const& vertex_img_locs,
+                                          vnl_matrix<double> const& subject_pca_components,
+                                          vnl_matrix<double> const& expression_pca_components,
+                                          face3d::head_mesh base_mesh,
+                                          std::vector<face3d::perspective_camera_parameters<double>> const& init_cameras
+                                          )
+{
+  std::vector<vgl_point_3d<double>> pts_out;
+  face3d::subject_sighting_coefficients<face3d::perspective_camera_parameters<double>> coeffs_out;
+  face3d::camera_estimation::compute_camera_params_bundle_adjust(vertex_img_locs,
+                                                                 subject_pca_components,
+                                                                 expression_pca_components,
+                                                                 base_mesh,
+                                                                 init_cameras,
+                                                                 pts_out,
+                                                                 coeffs_out);
+  return std::make_tuple(coeffs_out, pts_out);
 }
 
 template<class CAM_T>
@@ -848,5 +881,6 @@ PYBIND11_MODULE(face3d, m)
     .def(py::init<face3d::triangle_mesh const&>())
     .def("__call__", &wrap_vertex_localizer_call);
 
-  m.def("compute_camera_params_bundle_adjust", &wrap_compute_camera_params_bundle_adjust);
+  m.def("compute_camera_params_bundle_adjust", &wrap_compute_camera_params_bundle_adjust1);
+  m.def("compute_camera_params_bundle_adjust", &wrap_compute_camera_params_bundle_adjust2);
 }
