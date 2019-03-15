@@ -726,6 +726,7 @@ void wrap_subject_sighting_coefficients(py::module &m, std::string pyname)
     .def("image_filename", &subject_sighting_coefficients<CAM_T>::image_filename)
     .def("expression_coeffs", &subject_sighting_coefficients<CAM_T>::expression_coeffs, py::return_value_policy::copy)
     .def("save",&subject_sighting_coefficients<CAM_T>::save)
+    .def("set_filenames", &subject_sighting_coefficients<CAM_T>::set_filenames)
     .def("__repr__",[](face3d::subject_sighting_coefficients<CAM_T> const& c){
          std::stringstream ss;
          c.write(ss);
