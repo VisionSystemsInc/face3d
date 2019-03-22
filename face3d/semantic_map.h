@@ -26,6 +26,20 @@
 namespace face3d
 {
 
+//: A wrapper class to simplify extracting vertex locations from PNCC images
+class vertex_localizer
+{
+public:
+  vertex_localizer(triangle_mesh const& mesh);
+
+  std::map<int, vgl_point_2d<double> >
+    operator () ( dlib::array2d<vgl_point_3d<float> > const& semantic_map );
+
+private:
+  triangle_mesh mesh_;
+  igl::AABB<triangle_mesh::VTYPE, 3> mesh_tree_;
+};
+
 extern const vgl_box_3d<double> default_semantic_map_bbox;
 extern const vgl_box_3d<double> default_img3d_bbox;
 extern const vgl_box_3d<double> noneck_semantic_map_bbox;
