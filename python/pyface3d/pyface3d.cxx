@@ -791,6 +791,8 @@ PYBIND11_MODULE(face3d, m)
     .def("__init__", construct_textured_triangle_mesh)
     .def_property_readonly("num_faces", &face3d::textured_triangle_mesh<MESH_TEX_T>::num_faces)
     .def_property_readonly("num_vertices", &face3d::textured_triangle_mesh<MESH_TEX_T>::num_vertices)
+    .def_property_readonly("texture_nx",[](face3d::textured_triangle_mesh<MESH_TEX_T>& mesh){return mesh.texture().nc();})
+    .def_property_readonly("texture_ny",[](face3d::textured_triangle_mesh<MESH_TEX_T>& mesh){return mesh.texture().nr();})
     .def("set_texture", &wrap_set_texture<MESH_TEX_T>)
     .def("texture", &wrap_get_texture<MESH_TEX_T>);
 
