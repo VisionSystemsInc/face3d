@@ -640,6 +640,11 @@ render_to_texture(std::vector<face3d::textured_triangle_mesh<TEX_T> > const& mes
     glBindTexture(GL_TEXTURE_2D, img_depth_tex);
     glUniform1i(glGetUniformLocation(rtt_shader_prog, "img_depth"), 1);
 
+    // set up back-face culling
+    glFrontFace(GL_CW); // Note: This is not the default
+    glCullFace(GL_BACK);
+    glEnable(GL_CULL_FACE);
+
     if(!draw_mesh_triangles(mesh)) {
       std::cerr << "ERROR rendering mesh triangles" << std::endl;
       return false;
