@@ -448,6 +448,23 @@ wrap_render_uv(face3d::mesh_renderer &renderer,
   return py_img_uv;
 }
 
+template<class CAM_T, class TEX_T>
+py::array_t<int>
+wrap_render_face_idx(face3d::mesh_renderer &renderer,
+                     std::vector<face3d::textured_triangle_mesh<TEX_T> > const& meshes,
+                     CAM_T const& cam_params)
+{
+  dlib::array2d<int> face_idx;
+  face3d::render_aux_out aux_out;
+  aux_out.face_idx_ = &face_idx;
+  dlib::array2d<dlib::rgb_alpha_pixel> img;
+  renderer.render(meshes, cam_params, img, aux_out);
+  py::array_t<int> py_face_idx;
+  pybind_util::img_to_buffer(face_idx, py_face_idx);
+  return py_face_idx;
+}
+
+
 void wrap_set_background_color(face3d::mesh_renderer &renderer,
                                unsigned char red,
                                unsigned char green,
@@ -844,6 +861,8 @@ PYBIND11_MODULE(face3d, m)
     .def("render_uv", &wrap_render_uv<perspective_camera_parameters<double>, MESH_TEX_T>)
     .def("render_normals", &wrap_render_normals<ortho_camera_parameters<double>, MESH_TEX_T>)
     .def("render_normals", &wrap_render_normals<perspective_camera_parameters<double>, MESH_TEX_T>)
+    .def("render_face_idx", &wrap_render_face_idx<ortho_camera_parameters<double>, MESH_TEX_T>)
+    .def("render_face_idx", &wrap_render_face_idx<perspective_camera_parameters<double>, MESH_TEX_T>)
     .def("render_2d", &wrap_render_2d)
     .def("set_background_color", &wrap_set_background_color)
     .def("set_ambient_weight", &face3d::mesh_renderer::set_ambient_weight)
