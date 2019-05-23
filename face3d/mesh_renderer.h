@@ -435,7 +435,8 @@ bool face3d::mesh_renderer::render(std::vector<face3d::textured_triangle_mesh<TE
     int* face_idx_ptr = &((*aux_out.face_idx_)[0][0]);
     for (int yi=0; yi<ny; ++yi) {
       for (int xi=0; xi<nx; ++xi) {
-        *face_idx_ptr++ = *buff_ptr++;
+        *face_idx_ptr++ = *buff_ptr;
+        buff_ptr += 4;
       }
     }
     check_gl_error(__FILE__, __LINE__);
