@@ -365,7 +365,8 @@ py::array_t<unsigned char>
 wrap_render_2d(face3d::mesh_renderer &renderer,
                py::array_t<double> &V, py::array_t<int> &F,
                py::array_t<double> &UV, py::array_t<unsigned char> &tex,
-               int nx, int ny, float zmin, float zmax)
+               int nx, int ny, float zmin, float zmax,
+               bool tex_nearest_neighbor_interp)
 {
   dlib::array2d<dlib::rgb_alpha_pixel> tex_dlib;
   pybind_util::img_from_buffer(tex, tex_dlib);
@@ -377,7 +378,7 @@ wrap_render_2d(face3d::mesh_renderer &renderer,
   pybind_util::matrix_from_buffer(V, V_eig);
   pybind_util::matrix_from_buffer(F, F_eig);
   pybind_util::matrix_from_buffer(UV, UV_eig);
-  renderer.render_2d(V_eig, F_eig, UV_eig, tex_dlib, nx, ny, zmin, zmax, img_out_dlib);
+  renderer.render_2d(V_eig, F_eig, UV_eig, tex_dlib, nx, ny, zmin, zmax, img_out_dlib, tex_nearest_neighbor_interp);
 
   py::array_t<unsigned char> py_img_out;
   pybind_util::img_to_buffer(img_out_dlib, py_img_out);
@@ -863,7 +864,9 @@ PYBIND11_MODULE(face3d, m)
     .def("render_normals", &wrap_render_normals<perspective_camera_parameters<double>, MESH_TEX_T>)
     .def("render_face_idx", &wrap_render_face_idx<ortho_camera_parameters<double>, MESH_TEX_T>)
     .def("render_face_idx", &wrap_render_face_idx<perspective_camera_parameters<double>, MESH_TEX_T>)
-    .def("render_2d", &wrap_render_2d)
+    .def("render_2d", &wrap_render_2d, py::arg("V"), py::arg("F"), py::arg("UV"),
+         py::arg("texture"), py::arg("nx"), py::arg("ny"), py::arg("zmin"), py::arg("zmax"),
+         py::arg("tex_nearest_neighbor_interp")=false)
     .def("set_background_color", &wrap_set_background_color)
     .def("set_ambient_weight", &face3d::mesh_renderer::set_ambient_weight)
     .def("set_light_dir", &face3d::mesh_renderer::set_light_dir);

@@ -89,7 +89,8 @@ public:
   template<class RENDER_IMG_T, class TEX_T>
   bool render_2d(Eigen::MatrixXd const& V, Eigen::MatrixXi const& F,
                  Eigen::MatrixXd const& UV, TEX_T const& texture,
-                 int nx, int ny, float zmin, float zmax, RENDER_IMG_T &img);
+                 int nx, int ny, float zmin, float zmax, RENDER_IMG_T &img,
+                 bool tex_nearest_neighbor_interp=false);
 
   template <class IMG_T>
   void copy_rgba_image(dlib::array2d<dlib::rgb_alpha_pixel> const& src, IMG_T &dest);
@@ -126,7 +127,8 @@ private:
 
   template<class TEX_T>
   bool draw_mesh_2d(Eigen::MatrixXd const& V, Eigen::MatrixXi const& F,
-                    Eigen::MatrixXd const& UV, TEX_T const& tex);
+                    Eigen::MatrixXd const& UV, TEX_T const& tex,
+                    bool nearest_neighbor_interp=false);
 
   template<class TEX_T>
   bool draw_mesh_triangles(face3d::textured_triangle_mesh<TEX_T> const& mesh);
@@ -674,7 +676,8 @@ bool mesh_renderer::
 render_2d(Eigen::MatrixXd const& V, Eigen::MatrixXi const& F,
           Eigen::MatrixXd const& UV, TEX_T const& texture,
           int nx, int ny, float zmin, float zmax,
-          RENDER_IMG_T &img)
+          RENDER_IMG_T &img,
+          bool tex_nearest_neighbor_interp)
 {
   make_context_current();
   GLuint color_tex, depth_tex;
@@ -740,7 +743,7 @@ render_2d(Eigen::MatrixXd const& V, Eigen::MatrixXi const& F,
   glUniform2f(glGetUniformLocation(shader_prog, "img_dims"), nx, ny);
   glUniform2f(glGetUniformLocation(shader_prog, "depth_range"), zmin-0.1f, zmax+0.1f);
 
-  if (!draw_mesh_2d(V,F,UV,texture)) {
+  if (!draw_mesh_2d(V,F,UV,texture, tex_nearest_neighbor_interp)) {
     std::cerr << "ERROR drawing 2D mesh" << std::endl;
     return false;
   }
@@ -979,7 +982,8 @@ bool mesh_renderer::draw_mesh(face3d::textured_triangle_mesh<TEX_T> const& mesh)
 template<class TEX_T>
 bool mesh_renderer::
 draw_mesh_2d(Eigen::MatrixXd const& V, Eigen::MatrixXi const& F,
-             Eigen::MatrixXd const& UV, TEX_T const& tex_img)
+             Eigen::MatrixXd const& UV, TEX_T const& tex_img,
+             bool nearest_neighbor_interp)
 {
   glActiveTexture(GL_TEXTURE0);
   // get the texture
@@ -990,8 +994,14 @@ draw_mesh_2d(Eigen::MatrixXd const& V, Eigen::MatrixXi const& F,
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);	// Set texture wrapping to GL_REPEAT (usually basic wrapping method)
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
   // Set texture filtering parameters
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+  if (nearest_neighbor_interp) {
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+  } else {
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+  }
+
 
   dlib::array2d<dlib::rgb_alpha_pixel> tex_img_walpha;
   dlib::assign_image(tex_img_walpha, tex_img);
