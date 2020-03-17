@@ -58,7 +58,7 @@ namespace face3d{
       }else if(mesh_normalization_box=="flame"){
         this->use_flame_ = true;
       }else{
-        std::cout<<"Invalid mesh box identifier \""<<mesh_normalization_box<<"\". Choices are: "<<" \"3dmm\", \"flame\". Defaulting to flame"<<std::endl;
+        std::cout<<"Invalid mesh box identifier \""<<mesh_normalization_box<<"\".Choices are: "<<" \"3dmm\", \"flame\". Defaulting to \"flame\""<<std::endl;
         this->use_flame_ = true;
       }
 

@@ -105,7 +105,7 @@ public:
     const int nx = array.nc();
     const int ny = array.nr();
     // dlib does not have support for writing TIFFs, so go through vxl/vil
-    vil_image_view<T> img(nx, ny, 1);
+    vil_image_view<float> img(nx, ny, 1);
     for (int y=0; y<ny; ++y) {
       for (int x=0; x<nx; ++x) {
         img(x,y) = (T)(array[y][x]);
