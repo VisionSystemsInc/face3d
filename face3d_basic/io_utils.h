@@ -99,6 +99,22 @@ public:
     vil_save(img, filename.c_str());
   }
 
+  template<class T>
+  static void save_1d_tiff(dlib::array2d<T> const& array, std::string const& filename)
+  {
+    const int nx = array.nc();
+    const int ny = array.nr();
+    // dlib does not have support for writing TIFFs, so go through vxl/vil
+    vil_image_view<T> img(nx, ny, 1);
+    for (int y=0; y<ny; ++y) {
+      for (int x=0; x<nx; ++x) {
+        img(x,y) = (T)(array[y][x]);
+      }
+    }
+    // use vil to save as tiff
+    vil_save(img, filename.c_str());
+  }
+
   template <class T>
   static void load_3d_tiff(dlib::array2d<T> &img, std::string const& filename);
 

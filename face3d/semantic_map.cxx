@@ -8,6 +8,9 @@
 const vgl_box_3d<double> face3d::default_semantic_map_bbox = vgl_box_3d<double>(-100.0, -155.0, -100.0,
                                                                                 100.0, 130.0, 120.0);
 
+const vgl_box_3d<double> face3d::flame_semantic_map_bbox = vgl_box_3d<double>(-0.100, -0.155, -0.100,
+                                                                                0.100, 0.130, 0.120);
+
 const vgl_box_3d<double> face3d::noneck_semantic_map_bbox = vgl_box_3d<double>(-100.0, -130.0, -120.0,
                                                                                 100.0, 130.0, 120.0);
 
@@ -17,6 +20,9 @@ const vgl_box_3d<double> face3d::MM_semantic_map_bbox = vgl_box_3d<double>(-100.
 const vgl_box_3d<double> face3d::default_img3d_bbox = vgl_box_3d<double>(-100.0, -155.0, -100.0,
                                                                          100.0, 130.0, 120.0);
 
+const vgl_box_3d<double> face3d::flame_img3d_bbox = vgl_box_3d<double>(-0.100, -0.155, -0.100,
+                                                                         0.100, 0.130, 0.120);
+
 const vgl_box_3d<double> face3d::noneck_img3d_bbox = vgl_box_3d<double>(-100.0, -130.0, -120.0,
                                                                         100.0, 130.0, 120.0);
 
@@ -25,6 +31,8 @@ const vgl_box_3d<double> face3d::MM_img3d_bbox = vgl_box_3d<double>(-100.0, -130
 
 const vgl_box_3d<double> face3d::default_offsets_bbox = vgl_box_3d<double>(-20.0, -20.0, -20.0,
                                                                             20.0,  20.0,  20.0);
+const vgl_box_3d<double> face3d::flame_offsets_bbox = vgl_box_3d<double>(-0.020, -0.02, -0.02,
+                                                                            0.02,  0.02,  0.02);
 
 const vgl_box_3d<double> face3d::MM_offsets_bbox = vgl_box_3d<double>(-25.0, -25.0, -25.0,
                                                                       25.0,  25.0,  25.0);
@@ -85,4 +93,3 @@ void face3d::unnormalize_3d_image(vil_image_view<unsigned char> const& in, vgl_b
   }
   return;
 }
-

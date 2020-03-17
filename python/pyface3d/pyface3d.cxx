@@ -5,6 +5,7 @@
 #include <face3d_basic/perspective_camera_parameters.h>
 #include <face3d_basic/subject_sighting_coefficients.h>
 #include <face3d/textured_triangle_mesh.h>
+#include <face3d/pncc_renderer.h>
 #include <face3d/head_mesh.h>
 #include <face3d_basic/dlib_face_detector.h>
 #include <face3d/media_coefficient_from_semantic_map_estimator.h>
@@ -28,7 +29,9 @@ using MESH_TEX_T = dlib::array2d<dlib::rgb_alpha_pixel>;
 
 vpgl_affine_camera<double> ortho_camera_parameters_to_camera(ortho_camera_parameters<double> const& params)
 {
+
   return params.to_camera();
+
 }
 
 vpgl_perspective_camera<double> perspective_camera_parameters_to_camera(perspective_camera_parameters<double> const& params)
@@ -643,6 +646,14 @@ void wrap_subject_sighting_coefficients(py::module &m, std::string pyname)
          return ss.str();
          });
 }
+template <class CAM_T, class TEX_T>
+void wrap_pncc_and_offsets_renderer(py::module &m, std::string pyname)
+{
+  py::class_<face3d::pncc_and_offsets_renderer<CAM_T> >(m, pyname.c_str())
+    .def(py::init<std::string>())
+    .def(py::init<std::string, std::string>())
+    .def("render", &face3d::pncc_and_offsets_renderer<CAM_T>::render);
+}
 
 
 PYBIND11_MODULE(face3d, m)
@@ -691,6 +702,7 @@ PYBIND11_MODULE(face3d, m)
     .def("vertex_tex", &face3d::triangle_mesh::vertex_tex)
     .def("face", &face3d::triangle_mesh::face)
     .def("set_texture_coord", &face3d::triangle_mesh::set_texture_coord);
+
 
   py::class_<face3d::textured_triangle_mesh<MESH_TEX_T>, face3d::triangle_mesh >(m, "textured_triangle_mesh")
     .def(py::init<std::string, std::string>())
@@ -754,7 +766,8 @@ PYBIND11_MODULE(face3d, m)
   wrap_media_jitterer<face3d::perspective_camera_parameters<double> >(m, "media_jitterer_perspective");
   wrap_pose_jitterer(m, "pose_jitterer_uniform");
   wrap_profile_jitterer(m, "pose_jitterer_profile");
-
+  wrap_pncc_and_offsets_renderer<face3d::ortho_camera_parameters<double>, face3d::head_mesh::TEX_T >(m, "pncc_and_offsets_renderer_ortho");
+  wrap_pncc_and_offsets_renderer<face3d::perspective_camera_parameters<double>, face3d::head_mesh::TEX_T >(m, "pncc_and_offsets_renderer_perspective");
   m.def("coeffs_to_pixmap", &wrap_coeffs_to_pixmap);
 
   m.def("texture_to_image", &wrap_texture_to_image<face3d::perspective_camera_parameters<double>, dlib::array2d<dlib::rgb_alpha_pixel>, dlib::array2d<dlib::rgb_alpha_pixel>, MESH_TEX_T >);

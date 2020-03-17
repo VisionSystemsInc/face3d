@@ -100,6 +100,7 @@ public:
 
   void set_debug_dir(std::string const& dbg_dir) { debug_dir_ = dbg_dir; }
   void set_debug_mode(bool dbg_mode) { debug_mode_ = dbg_mode; }
+  dlib::array2d<GLfloat>& get_last_depth(){return this->last_depth_;}
   static std::mutex renderer_mutex_;
 
 private:

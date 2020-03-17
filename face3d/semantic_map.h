@@ -28,11 +28,14 @@ namespace face3d
 
 extern const vgl_box_3d<double> default_semantic_map_bbox;
 extern const vgl_box_3d<double> default_img3d_bbox;
+extern const vgl_box_3d<double> flame_semantic_map_bbox;
+extern const vgl_box_3d<double> flame_img3d_bbox;
 extern const vgl_box_3d<double> noneck_semantic_map_bbox;
 extern const vgl_box_3d<double> noneck_img3d_bbox;
 extern const vgl_box_3d<double> MM_semantic_map_bbox;
 extern const vgl_box_3d<double> MM_img3d_bbox;
 extern const vgl_box_3d<double> default_offsets_bbox;
+extern const vgl_box_3d<double> flame_offsets_bbox;
 extern const vgl_box_3d<double> MM_offsets_bbox;
 
 void normalize_3d_image(vil_image_view<float> const& in, vgl_box_3d<double> const& bbox,
@@ -523,4 +526,3 @@ unnormalize_3d_image(dlib::array2d<dlib::rgb_pixel> const& in, vgl_box_3d<double
   }
   return;
 }
-
