@@ -108,7 +108,7 @@ public:
     vil_image_view<float> img(nx, ny, 1);
     for (int y=0; y<ny; ++y) {
       for (int x=0; x<nx; ++x) {
-        img(x,y) = (T)(array[y][x]);
+        img(x,y) = (float)(array[y][x]);
       }
     }
     // use vil to save as tiff
