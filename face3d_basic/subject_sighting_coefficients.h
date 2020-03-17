@@ -41,6 +41,7 @@ class subject_sighting_coefficients
     void unpack(vnl_vector<double> const& x);
 
     void set_subject_coeffs(vnl_vector<double> const& subj_coeffs) { subj_coeffs_ = subj_coeffs;}
+    void set_filenames(std::vector<std::string> const& img_filenames);
 
     // return the single-image sighting coefficients for image idx
     sighting_coefficients<CAM_T> sighting(int idx) const;
@@ -249,6 +250,16 @@ all_sightings() const
                                              cam_params_[i]));
   }
   return s;
+}
+
+template<class CAM_T>
+void subject_sighting_coefficients<CAM_T>::
+set_filenames(std::vector<std::string> const& img_filenames)
+{
+  if (img_filenames.size() != image_fnames_.size()) {
+    throw std::logic_error("wrong number of image filenames");
+  }
+  image_fnames_ = img_filenames;
 }
 
 

@@ -8,10 +8,14 @@
 
 #include <face3d_basic/ortho_camera_parameters.h>
 #include <face3d_basic/perspective_camera_parameters.h>
+#include <face3d_basic/subject_sighting_coefficients.h>
+#include <face3d/head_mesh.h>
 
 #include <dlib/array2d.h>
 #include <dlib/pixel.h>
 #include <dlib/image_transforms.h>
+
+#include "triangle_mesh.h"
 
 namespace face3d
 {
@@ -23,9 +27,27 @@ bool compute_camera_params(std::vector<vgl_point_2d<double> > const& pts2d,
                            int nx, int ny,
                            ortho_camera_parameters<double> &cam_params);
 
+// The semantics of this function are nonsensical, but it needs to be defined to
+// satisfy the compiler due to the optional focal_length specification in the
+// coefficient estimator.
+// TODO: refactor so this hack is not necessary.
 bool compute_camera_params(std::vector<vgl_point_2d<double> > const& pts2d,
                            std::vector<vgl_point_3d<double> > const& pts3d,
                            int nx, int ny,
+                           double focal_len,
+                           vgl_point_2d<double> principal_pt,
+                           ortho_camera_parameters<double> &cam_params);
+
+bool compute_camera_params(std::vector<vgl_point_2d<double> > const& pts2d,
+                           std::vector<vgl_point_3d<double> > const& pts3d,
+                           int nx, int ny,
+                           perspective_camera_parameters<double> &cam_params);
+
+bool compute_camera_params(std::vector<vgl_point_2d<double> > const& pts2d,
+                           std::vector<vgl_point_3d<double> > const& pts3d,
+                           int nx, int ny,
+                           double focal_len,
+                           vgl_point_2d<double> principal_pt,
                            perspective_camera_parameters<double> &cam_params);
 
 template<class T, class CAM_T>
@@ -51,6 +73,21 @@ private:
   vgl_point_2d<double> principal_pt_;
 };
 
+void compute_camera_params_bundle_adjust(std::vector<std::map<int, vgl_point_2d<double>>> const& vertex_img_locs,
+                                         vnl_matrix<double> const& subject_pca_components,
+                                         vnl_matrix<double> const& expression_pca_components,
+                                         face3d::head_mesh &base_mesh,
+                                         std::vector<face3d::perspective_camera_parameters<double>> const& init_cameras,
+                                         std::vector<vgl_point_3d<double>> &points_out,
+                                         face3d::subject_sighting_coefficients<face3d::perspective_camera_parameters<double>> &coeffs_out);
+
+void compute_camera_params_bundle_adjust(std::vector<dlib::array2d<vgl_point_3d<float>>> const& PNCCs,
+                                         vnl_matrix<double> const& subject_pca_components,
+                                         vnl_matrix<double> const& expression_pca_components,
+                                         face3d::head_mesh &base_mesh,
+                                         std::vector<face3d::perspective_camera_parameters<double>> const& init_cameras,
+                                         std::vector<vgl_point_3d<double>> &points_out,
+                                         face3d::subject_sighting_coefficients<face3d::perspective_camera_parameters<double>> &coeffs_out);
 
 // provide a function template for convenience. Compiler will prefer
 // non-templates until template arg is explicitly given.  Needed by

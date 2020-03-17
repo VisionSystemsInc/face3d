@@ -55,6 +55,14 @@ wrap_coeffs_to_pixmap(face3d::head_mesh const& mesh,
   return pixmap_out;
 }
 
+std::map<int, vgl_point_2d<double> >
+wrap_vertex_localizer_call(face3d::vertex_localizer &self, py::array_t<float> &pncc)
+{
+  dlib::array2d<vgl_point_3d<float> > pncc_dlib;
+  pybind_util::img_from_buffer(pncc, pncc_dlib);
+  return self(pncc_dlib);
+}
+
 py::array_t<float>
 wrap_correct_offsets(py::array_t<float> &pncc, py::array_t<float> &offsets)
 {
@@ -230,7 +238,57 @@ CAM_T wrap_compute_camera_params(std::vector<vgl_point_2d<double> > const& pts2d
   return cam_out;
 }
 
+std::tuple<
+face3d::subject_sighting_coefficients<face3d::perspective_camera_parameters<double>>,
+std::vector<vgl_point_3d<double>>
+  >
+wrap_compute_camera_params_bundle_adjust1(std::vector<py::array_t<float>> &PNCCs,
+                                          vnl_matrix<double> const& subject_pca_components,
+                                          vnl_matrix<double> const& expression_pca_components,
+                                          face3d::head_mesh base_mesh,
+                                          std::vector<face3d::perspective_camera_parameters<double>> const& init_cameras
+                                          )
+{
+  std::vector<dlib::array2d<vgl_point_3d<float>>> PNCCs_dlib;
+  for (auto &PNCC : PNCCs) {
+    dlib::array2d<vgl_point_3d<float> > pncc_dlib;
+    pybind_util::img_from_buffer(PNCC, pncc_dlib);
+    PNCCs_dlib.push_back(std::move(pncc_dlib));
+  }
+  std::vector<vgl_point_3d<double>> pts_out;
+  face3d::subject_sighting_coefficients<face3d::perspective_camera_parameters<double>> coeffs_out;
+  face3d::camera_estimation::compute_camera_params_bundle_adjust(PNCCs_dlib,
+                                                                 subject_pca_components,
+                                                                 expression_pca_components,
+                                                                 base_mesh,
+                                                                 init_cameras,
+                                                                 pts_out,
+                                                                 coeffs_out);
+  return std::make_tuple(coeffs_out, pts_out);
+}
 
+std::tuple<
+face3d::subject_sighting_coefficients<face3d::perspective_camera_parameters<double>>,
+std::vector<vgl_point_3d<double>>
+  >
+wrap_compute_camera_params_bundle_adjust2(std::vector<std::map<int, vgl_point_2d<double>>> const& vertex_img_locs,
+                                          vnl_matrix<double> const& subject_pca_components,
+                                          vnl_matrix<double> const& expression_pca_components,
+                                          face3d::head_mesh base_mesh,
+                                          std::vector<face3d::perspective_camera_parameters<double>> const& init_cameras
+                                          )
+{
+  std::vector<vgl_point_3d<double>> pts_out;
+  face3d::subject_sighting_coefficients<face3d::perspective_camera_parameters<double>> coeffs_out;
+  face3d::camera_estimation::compute_camera_params_bundle_adjust(vertex_img_locs,
+                                                                 subject_pca_components,
+                                                                 expression_pca_components,
+                                                                 base_mesh,
+                                                                 init_cameras,
+                                                                 pts_out,
+                                                                 coeffs_out);
+  return std::make_tuple(coeffs_out, pts_out);
+}
 
 template<class CAM_T>
 std::tuple<face3d::subject_sighting_coefficients<CAM_T>, face3d::estimation_results_t>
@@ -282,11 +340,36 @@ wrap_estimate_coefficients_from_pncc( face3d::media_coefficient_from_semantic_ma
   return std::make_tuple(coeffs, retval);
 }
 
+template<class CAM_T>
+std::tuple<face3d::subject_sighting_coefficients<CAM_T>, face3d::estimation_results_t>
+wrap_estimate_coefficients_from_pncc_and_cameras( face3d::media_coefficient_from_semantic_map_estimator &estimator,
+                                                  std::vector<std::string> const& img_ids,
+                                                  std::vector<py::array_t<float> > &pnccs,
+                                                  std::vector<CAM_T> const& cameras)
+{
+  const int num_imgs = img_ids.size();
+  if (pnccs.size() != num_imgs) {
+    throw std::logic_error("Different number of image IDs and pnccs passed to estimate_coefficients");
+  }
+  std::vector<dlib::array2d<vgl_point_3d<float> > > pnccs_dlib(num_imgs);
+  for (int i=0; i<num_imgs; ++i) {
+    pybind_util::img_from_buffer(pnccs[i], pnccs_dlib[i]);
+  }
+  subject_sighting_coefficients<CAM_T> coeffs;
+  face3d::estimation_results_t retval = estimator.estimate_coefficients(img_ids, pnccs_dlib, cameras, coeffs);
+  if (!retval) {
+    std::cerr << "WARNING: media_coefficient_from_PNCC_estimator::estimate_coefficients() returned error" <<std::endl;
+  }
+  return std::make_tuple(coeffs, retval);
+}
+
+
 py::array_t<unsigned char>
 wrap_render_2d(face3d::mesh_renderer &renderer,
                py::array_t<double> &V, py::array_t<int> &F,
                py::array_t<double> &UV, py::array_t<unsigned char> &tex,
-               int nx, int ny, float zmin, float zmax)
+               int nx, int ny, float zmin, float zmax,
+               bool tex_nearest_neighbor_interp)
 {
   dlib::array2d<dlib::rgb_alpha_pixel> tex_dlib;
   pybind_util::img_from_buffer(tex, tex_dlib);
@@ -298,7 +381,7 @@ wrap_render_2d(face3d::mesh_renderer &renderer,
   pybind_util::matrix_from_buffer(V, V_eig);
   pybind_util::matrix_from_buffer(F, F_eig);
   pybind_util::matrix_from_buffer(UV, UV_eig);
-  renderer.render_2d(V_eig, F_eig, UV_eig, tex_dlib, nx, ny, zmin, zmax, img_out_dlib);
+  renderer.render_2d(V_eig, F_eig, UV_eig, tex_dlib, nx, ny, zmin, zmax, img_out_dlib, tex_nearest_neighbor_interp);
 
   py::array_t<unsigned char> py_img_out;
   pybind_util::img_to_buffer(img_out_dlib, py_img_out);
@@ -369,6 +452,30 @@ wrap_render_uv(face3d::mesh_renderer &renderer,
   return py_img_uv;
 }
 
+template<class CAM_T, class TEX_T>
+py::array_t<int>
+wrap_render_face_idx(face3d::mesh_renderer &renderer,
+                     std::vector<face3d::textured_triangle_mesh<TEX_T> > const& meshes,
+                     CAM_T const& cam_params)
+{
+  dlib::array2d<int> face_idx;
+  face3d::render_aux_out aux_out;
+  aux_out.face_idx_ = &face_idx;
+  dlib::array2d<dlib::rgb_alpha_pixel> img;
+  renderer.render(meshes, cam_params, img, aux_out);
+  py::array_t<int> py_face_idx;
+  pybind_util::img_to_buffer(face_idx, py_face_idx);
+  return py_face_idx;
+}
+
+
+void wrap_set_background_color(face3d::mesh_renderer &renderer,
+                               unsigned char red,
+                               unsigned char green,
+                               unsigned char blue)
+{
+  renderer.set_background_color(dlib::rgb_pixel(red,green,blue));
+}
 
 template<class TEX_T>
 void wrap_set_texture(face3d::textured_triangle_mesh<TEX_T> &mesh,
@@ -640,6 +747,7 @@ void wrap_subject_sighting_coefficients(py::module &m, std::string pyname)
     .def("image_filename", &subject_sighting_coefficients<CAM_T>::image_filename)
     .def("expression_coeffs", &subject_sighting_coefficients<CAM_T>::expression_coeffs, py::return_value_policy::copy)
     .def("save",&subject_sighting_coefficients<CAM_T>::save)
+    .def("set_filenames", &subject_sighting_coefficients<CAM_T>::set_filenames)
     .def("__repr__",[](face3d::subject_sighting_coefficients<CAM_T> const& c){
          std::stringstream ss;
          c.write(ss);
@@ -672,14 +780,17 @@ PYBIND11_MODULE(face3d, m)
     .def("to_camera", &ortho_camera_parameters_to_camera);
 
   py::class_<face3d::perspective_camera_parameters<double> > (m, "perspective_camera_parameters")
-    // constructor: focal_len, principal_pt, rotation, translation, nx, ny
-    .def(py::init<double, vgl_point_2d<double>, vgl_rotation_3d<double>, vgl_vector_3d<double>, int, int>())
+    .def(py::init<>())
+    .def(py::init<double, vgl_point_2d<double>, vgl_rotation_3d<double>, vgl_vector_3d<double>, int, int>(),
+         py::arg("focal_len"), py::arg("principal_point"), py::arg("rotation"), py::arg("translation"), py::arg("nx"), py::arg("ny"))
     .def_property_readonly("focal_len", &face3d::perspective_camera_parameters<double>::focal_len)
     .def_property_readonly("principal_point", &face3d::perspective_camera_parameters<double>::principal_point, py::return_value_policy::copy)
     .def_property_readonly("rotation", &face3d::perspective_camera_parameters<double>::rotation, py::return_value_policy::copy)
     .def_property_readonly("translation", &face3d::perspective_camera_parameters<double>::translation, py::return_value_policy::copy)
     .def_property_readonly("nx", &face3d::perspective_camera_parameters<double>::nx)
     .def_property_readonly("ny", &face3d::perspective_camera_parameters<double>::ny)
+    .def("from_camera", &face3d::perspective_camera_parameters<double>::from_camera,
+         py::arg("camera"), py::arg("nx"), py::arg("ny"))
     .def("to_camera", &perspective_camera_parameters_to_camera);
 
   wrap_subject_sighting_coefficients<face3d::ortho_camera_parameters<double> >(m, "subject_ortho_sighting_coefficients");
@@ -710,6 +821,8 @@ PYBIND11_MODULE(face3d, m)
     .def("__init__", construct_textured_triangle_mesh)
     .def_property_readonly("num_faces", &face3d::textured_triangle_mesh<MESH_TEX_T>::num_faces)
     .def_property_readonly("num_vertices", &face3d::textured_triangle_mesh<MESH_TEX_T>::num_vertices)
+    .def_property_readonly("texture_nx",[](face3d::textured_triangle_mesh<MESH_TEX_T>& mesh){return mesh.texture().nc();})
+    .def_property_readonly("texture_ny",[](face3d::textured_triangle_mesh<MESH_TEX_T>& mesh){return mesh.texture().nr();})
     .def("set_texture", &wrap_set_texture<MESH_TEX_T>)
     .def("texture", &wrap_get_texture<MESH_TEX_T>);
 
@@ -730,14 +843,25 @@ PYBIND11_MODULE(face3d, m)
     .def_readonly("vertices_found", &face3d::estimation_results_t::vertices_found_);
 
   py::class_<face3d::media_coefficient_from_PNCC_and_offset_estimator>(m, "media_coefficient_from_PNCC_and_offset_estimator")
-    .def(py::init<face3d::head_mesh, vnl_matrix<double> const&, vnl_matrix<double> const&, vnl_matrix<double> const&, vnl_matrix<double> const&, bool, std::string>())
+    .def(py::init<face3d::head_mesh, vnl_matrix<double> const&, vnl_matrix<double> const&, vnl_matrix<double> const&, vnl_matrix<double> const&, bool, std::string, double>(),
+         py::arg("mesh"),
+         py::arg("subject_pca_components"), py::arg("expression_pca_components"),
+         py::arg("subject_pca_ranges"), py::arg("expression_pca_ranges"),
+         py::arg("debug_mode"), py::arg("debug_dir"),
+         py::arg("fixed_focal_len") = -1.0)
     .def("estimate_coefficients_ortho", &wrap_estimate_coefficients_from_pncc_and_offsets<face3d::ortho_camera_parameters<double> >)
     .def("estimate_coefficients_perspective", &wrap_estimate_coefficients_from_pncc_and_offsets<face3d::perspective_camera_parameters<double> >);
 
   py::class_<face3d::media_coefficient_from_semantic_map_estimator>(m, "media_coefficient_from_PNCC_estimator")
-    .def(py::init<face3d::head_mesh, vnl_matrix<double> const&, vnl_matrix<double> const&, vnl_matrix<double> const&, vnl_matrix<double> const&, bool, std::string>())
+    .def(py::init<face3d::head_mesh, vnl_matrix<double> const&, vnl_matrix<double> const&, vnl_matrix<double> const&, vnl_matrix<double> const&, bool, std::string, double>(),
+         py::arg("mesh"),
+         py::arg("subject_pca_components"), py::arg("expression_pca_components"),
+         py::arg("subject_pca_ranges"), py::arg("expression_pca_ranges"),
+         py::arg("debug_mode"), py::arg("debug_dir"),
+         py::arg("fixed_focal_len") = -1.0)
     .def("estimate_coefficients_ortho", &wrap_estimate_coefficients_from_pncc<face3d::ortho_camera_parameters<double> >)
-    .def("estimate_coefficients_perspective", &wrap_estimate_coefficients_from_pncc<face3d::perspective_camera_parameters<double> >);
+    .def("estimate_coefficients_perspective", &wrap_estimate_coefficients_from_pncc<face3d::perspective_camera_parameters<double> >)
+    .def("estimate_coefficients_perspective", &wrap_estimate_coefficients_from_pncc_and_cameras<face3d::perspective_camera_parameters<double> >);
 
   py::class_<face3d::mesh_renderer>(m, "mesh_renderer")
     .def(py::init<>())
@@ -750,7 +874,12 @@ PYBIND11_MODULE(face3d, m)
     .def("render_uv", &wrap_render_uv<perspective_camera_parameters<double>, MESH_TEX_T>)
     .def("render_normals", &wrap_render_normals<ortho_camera_parameters<double>, MESH_TEX_T>)
     .def("render_normals", &wrap_render_normals<perspective_camera_parameters<double>, MESH_TEX_T>)
-    .def("render_2d", &wrap_render_2d)
+    .def("render_face_idx", &wrap_render_face_idx<ortho_camera_parameters<double>, MESH_TEX_T>)
+    .def("render_face_idx", &wrap_render_face_idx<perspective_camera_parameters<double>, MESH_TEX_T>)
+    .def("render_2d", &wrap_render_2d, py::arg("V"), py::arg("F"), py::arg("UV"),
+         py::arg("texture"), py::arg("nx"), py::arg("ny"), py::arg("zmin"), py::arg("zmax"),
+         py::arg("tex_nearest_neighbor_interp")=false)
+    .def("set_background_color", &wrap_set_background_color)
     .def("set_ambient_weight", &face3d::mesh_renderer::set_ambient_weight)
     .def("set_light_dir", &face3d::mesh_renderer::set_light_dir);
 
@@ -785,4 +914,11 @@ PYBIND11_MODULE(face3d, m)
   m.def("set_cuda_device", &face3d::set_cuda_device);
   m.def("get_cuda_device", &face3d::get_cuda_device);
 #endif
+
+  py::class_<face3d::vertex_localizer>(m, "vertex_localizer")
+    .def(py::init<face3d::triangle_mesh const&>())
+    .def("__call__", &wrap_vertex_localizer_call);
+
+  m.def("compute_camera_params_bundle_adjust", &wrap_compute_camera_params_bundle_adjust1);
+  m.def("compute_camera_params_bundle_adjust", &wrap_compute_camera_params_bundle_adjust2);
 }
