@@ -9,7 +9,7 @@
 	url = https://github.com/pybind/pybind11.git
 [submodule "python/pyvxl"]
 	path = python/pyvxl
-	url = git@github.com:VisionSystemsInc/pyvxl.git
+	url = https://github.com/VisionSystemsInc/pyvxl.git
 [submodule "external/libigl"]
 	path = external/libigl
 	url = https://github.com/libigl/libigl.git
