@@ -177,8 +177,6 @@ void face3d::pncc_and_offsets_renderer<CAM_T>::render(face3d::triangle_mesh& bas
   // convert to rgb byte images
   dlib::array2d<dlib::rgb_pixel> face_map_rgb(ny,nx);
   face3d::normalize_3d_image(face_map, face_map_bbox, face_map_rgb);
-  dlib::array2d<dlib::rgb_pixel> img3d_rgb(ny,nx);
-  face3d::normalize_3d_image(img3d, img3d_bbox, img3d_rgb);
   dlib::array2d<dlib::rgb_pixel> offsets_rgb(ny,nx);
   face3d::normalize_3d_image(offsets, offsets_bbox, offsets_rgb);
 
@@ -186,22 +184,16 @@ void face3d::pncc_and_offsets_renderer<CAM_T>::render(face3d::triangle_mesh& bas
   for (char &c : extension) { c = std::tolower(c);}
   // save in the desired image format
   std::string PNCC_output_fname =  output_dir + "/" + basename + "_pncc" + extension ;
-  std::string img3d_output_fname =  output_dir + "/" + basename + "_img3d" + extension ;
   std::string offsets_output_fname =  output_dir + "/" + basename + "_offsets" + extension ;
-  std::string depth_output_fname =  output_dir + "/" + basename + "_depth.tiff";
 
-  vil_save(depth, depth_output_fname.c_str());
   if (extension == ".tiff") {
     face3d::io_utils::save_3d_tiff(face_map, PNCC_output_fname.c_str());
-    face3d::io_utils::save_3d_tiff(img3d, img3d_output_fname.c_str());
     face3d::io_utils::save_3d_tiff(offsets, offsets_output_fname.c_str());
 
   }
   else {
     face3d::io_utils::save_image(face_map_rgb, PNCC_output_fname.c_str());
-    face3d::io_utils::save_image(img3d_rgb, img3d_output_fname.c_str());
     face3d::io_utils::save_image(offsets_rgb, offsets_output_fname.c_str());
-
   }
 
   if (this->debug_dir_ != "") {
@@ -215,6 +207,19 @@ void face3d::pncc_and_offsets_renderer<CAM_T>::render(face3d::triangle_mesh& bas
     // save face_bc image
     std::string face_bc_fname = this->debug_dir_ + "/" + basename + "_face_bc.tiff";
     face3d::io_utils::save_3d_tiff(face_bc_img, face_bc_fname.c_str());
+    // save depth img
+    std::string depth_output_fname =  output_dir + "/" + basename + "_depth.tiff";
+    vil_save(depth, depth_output_fname.c_str());
+    // save img_3d
+    dlib::array2d<dlib::rgb_pixel> img3d_rgb(ny,nx);
+    face3d::normalize_3d_image(img3d, img3d_bbox, img3d_rgb);
+    std::string img3d_output_fname =  output_dir + "/" + basename + "_img3d" + extension ;
+    if (extension == ".tiff") {
+      face3d::io_utils::save_3d_tiff(img3d, img3d_output_fname.c_str());
+    }else{
+      face3d::io_utils::save_image(img3d_rgb, img3d_output_fname.c_str());
+    }
+
   }
   //std::cout << "wrote " << output_fname << std::endl;
 }
