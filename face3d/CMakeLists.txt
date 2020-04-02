@@ -23,6 +23,7 @@ set(FACE3D_SOURCES
   mesh_background_renderer.h
   media_coefficient_from_PNCC_and_offset_estimator.h media_coefficient_from_PNCC_and_offset_estimator.cxx
   pose_jitterer.h pose_jitterer.cxx
+  novel_view_jitterer.h novel_view_jitterer.cxx
   pncc_renderer.h
   face3d_cuda_context.h face3d_cuda_context.cxx
   coeffs_to_pixmap.h coeffs_to_pixmap.cxx
