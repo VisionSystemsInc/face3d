@@ -19,13 +19,11 @@ namespace face3d{
         dlib::assign_image(images_[i], images[i]);
       }
 
-      dlib::array2d<dlib::vector<float,2> > face_sym_map;
       const int face_tex_nr = subject_meshes[0].texture().nr();
       const int face_tex_nc = subject_meshes[0].texture().nc();
 
       face3d::generate_symmetry_map(subject_meshes_[0].V(), subject_meshes_[0].F(), subject_meshes_[0].T(),
-                                  face_tex_nc, face_tex_nr, face_sym_map);
-      init(images_, subject_meshes_, cam_params_, face_sym_map);
+                                  face_tex_nc, face_tex_nr, face_sym_map_);
       this->debug_mode_ = debug_dir != "" ? true : false;
     }
     template <class CAM_OUT_T, class IMG_OUT_T>
@@ -55,6 +53,7 @@ namespace face3d{
       if (!bkgnd_renderer_){
         bkgnd_renderer_.reset(new face3d::mesh_background_renderer_agnostic<CAM_T, IMG_T>(this->images_, this->subject_meshes_,this->cam_params_, *this->model_renderer_));
       }
+      init(images_, subject_meshes_, cam_params_, face_sym_map_);
     }
 
     void enable_texture(face3d::textured_triangle_mesh<TEX_T> & mesh, bool tex_enabled);
@@ -67,6 +66,7 @@ namespace face3d{
     std::vector<IMG_T > images_;
     std::vector<face3d::textured_triangle_mesh<TEX_T> > subject_meshes_;
     std::vector<CAM_T>  cam_params_;
+    dlib::array2d<dlib::vector<float,2> > face_sym_map_;
 
   };
 
