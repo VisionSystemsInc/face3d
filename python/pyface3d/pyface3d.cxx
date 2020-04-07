@@ -17,6 +17,8 @@
 #include <face3d/camera_estimation.h>
 #include <face3d/texture_map_operations.h>
 #include <face3d/pose_jitterer.h>
+#include <face3d/mesh_background_renderer_agnostic.h>
+#include <face3d/novel_view_jitterer.h>
 #include <dlib/array2d.h>
 #include <dlib/pixel.h>
 
@@ -645,8 +647,8 @@ void wrap_pose_jitterer(py::module &m, std::string pyname)
 
 std::vector<py::array_t<unsigned char> >
 wrap_profile_jitterer_jitter_images(face3d::pose_jitterer_profile& jitterer_profile,
-                                 std::vector<py::array_t<unsigned char> > &imgs,
-                                 face3d::subject_sighting_coefficients<CAM_T> & coeffs, int num_jitters)
+                                    std::vector<py::array_t<unsigned char> > &imgs,
+                                    face3d::subject_sighting_coefficients<CAM_T> & coeffs, int num_jitters)
 {
   // handle input
   unsigned num_images_in = imgs.size();
@@ -717,7 +719,47 @@ void wrap_profile_jitterer(py::module &m, std::string pyname)
 }
 
 
+template<class CAM_T>
+void construct_novel_view_jitterer(face3d::novel_view_jitterer<CAM_T, dlib::array2d<dlib::rgb_pixel>> &jitterer,
+                                   std::vector<py::array_t<unsigned char> > &imgs,
+                                   std::vector<face3d::textured_triangle_mesh<TEX_T> >& subject_meshes,
+                                   std::vector<CAM_T>& cam_params,
+                                   std::string const& debug_dir)
+{
+  const int num_images = imgs.size();
+  // convert input images to dlib array2d's
+  std::vector<dlib::array2d<dlib::rgb_pixel> > imgs_dlib(num_images);
+  for (int i=0; i<num_images; ++i) {
+    pybind_util::img_from_buffer(imgs[i], imgs_dlib[i]);
+  }
+  // extract sighting coeffs
 
+  // in-place constructor
+  new (&jitterer) novel_view_jitterer<CAM_T, dlib::array2d<dlib::rgb_pixel> >(imgs_dlib, subject_meshes, cam_params,
+                                                                             debug_dir);
+}
+template<class CAM_T, class CAM_OUT_T>
+std::vector<py::array_t<unsigned char> >
+wrap_novel_view_jitterer_render(novel_view_jitterer<CAM_T, dlib::array2d<dlib::rgb_pixel> > & novel_jitterer,
+                                                           std::vector<CAM_OUT_T> const& novel_camera){
+  unsigned num_renderings = novel_camera.size();
+  std::vector<py::array_t<unsigned char> > output_vector(num_renderings);
+  std::vector<dlib::array2d<dlib::rgb_alpha_pixel> > output_vector_renderer(num_renderings);
+  novel_jitterer.render(novel_camera, output_vector_renderer);
+  for (unsigned i=0; i<num_renderings; i++){
+    pybind_util::img_to_buffer(output_vector_renderer[i], output_vector[i]);
+  }
+  return output_vector;
+}
+
+
+template<class CAM_T>
+void wrap_novel_view_jitterer(py::module &m, std::string pyname){
+    py::class_<face3d::novel_view_jitterer<CAM_T, dlib::array2d<dlib::rgb_pixel> > >(m, pyname.c_str())
+      .def("__init__", construct_novel_view_jitterer<CAM_T>)
+      .def("render", wrap_novel_view_jitterer_render<CAM_T, face3d::ortho_camera_parameters<double> >)
+      .def("render", wrap_novel_view_jitterer_render<CAM_T, face3d::perspective_camera_parameters<double> >);
+}
 template<class CAM_T>
 void wrap_media_jitterer(py::module &m, std::string pyname)
 {
@@ -895,6 +937,8 @@ PYBIND11_MODULE(face3d, m)
   wrap_media_jitterer<face3d::perspective_camera_parameters<double> >(m, "media_jitterer_perspective");
   wrap_pose_jitterer(m, "pose_jitterer_uniform");
   wrap_profile_jitterer(m, "pose_jitterer_profile");
+  wrap_novel_view_jitterer<face3d::ortho_camera_parameters<double> >(m, "novel_view_jitterer_ortho");
+  wrap_novel_view_jitterer<face3d::perspective_camera_parameters<double> >(m, "novel_view_jitterer_perspective");
   wrap_pncc_and_offsets_renderer<face3d::ortho_camera_parameters<double>, face3d::head_mesh::TEX_T >(m, "pncc_and_offsets_renderer_ortho");
   wrap_pncc_and_offsets_renderer<face3d::perspective_camera_parameters<double>, face3d::head_mesh::TEX_T >(m, "pncc_and_offsets_renderer_perspective");
   m.def("coeffs_to_pixmap", &wrap_coeffs_to_pixmap);
