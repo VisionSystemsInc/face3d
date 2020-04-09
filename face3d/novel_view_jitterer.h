@@ -199,6 +199,8 @@ namespace face3d{
           face3d_img_util::assign_pixel(render_img, y, x , curr_pixel, 1);
         }
       }
+    }else{
+      dlib::assign_image(render_img, face_image);
     }
 
     return true;

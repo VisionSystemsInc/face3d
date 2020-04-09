@@ -854,7 +854,8 @@ PYBIND11_MODULE(face3d, m)
     .def("vertex", &face3d::triangle_mesh::vertex)
     .def("vertex_tex", &face3d::triangle_mesh::vertex_tex)
     .def("face", &face3d::triangle_mesh::face)
-    .def("set_texture_coord", &face3d::triangle_mesh::set_texture_coord);
+    .def("set_texture_coord", &face3d::triangle_mesh::set_texture_coord)
+    .def("compute_normals", &face3d::triangle_mesh::compute_normals);
 
 
   py::class_<face3d::textured_triangle_mesh<MESH_TEX_T>, face3d::triangle_mesh >(m, "textured_triangle_mesh")

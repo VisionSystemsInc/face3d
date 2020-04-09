@@ -74,6 +74,7 @@ namespace face3d
 
       void save_obj(std::string const& mesh_filename) const;
       void save_ply(std::string const& mesh_filename) const;
+      void compute_normals();
 
     private:
       VTYPE V_;
@@ -81,7 +82,7 @@ namespace face3d
       NTYPE N_;
       TTYPE T_;
 
-      void compute_normals();
+
       void normalize_normals();
   };
 
