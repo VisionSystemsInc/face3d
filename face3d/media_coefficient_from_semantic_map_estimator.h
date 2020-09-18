@@ -38,7 +38,8 @@ public:
                                                 vnl_matrix<double> const& subject_pca_ranges,
                                                 vnl_matrix<double> const& expression_pca_ranges,
                                                 bool debug_mode, std::string debug_dir,
-                                                double fixed_focal_len=-1.0);
+                                                double fixed_focal_len=-1.0,
+                                                int cuda_device=0);
 
   template<class T>
     estimation_results_t estimate_coefficients(std::vector<std::string> const& img_ids,
@@ -69,6 +70,7 @@ private:
   bool debug_mode_;
   std::string debug_dir_;
   double fixed_focal_len_;
+  int cuda_device_;
 };
 
 
@@ -92,7 +94,7 @@ estimate_coefficients(std::vector<std::string> const& img_ids,
 
   std::vector<std::map<int, vgl_point_2d<double> > > vertex_projection_maps(num_images);
   for (int n=0; n<num_images; ++n) {
-    extract_vertex_projections(semantic_maps[n], mean_face_mesh_, vertex_projection_maps[n], mean_face_mesh_tree_);
+    extract_vertex_projections(semantic_maps[n], mean_face_mesh_, vertex_projection_maps[n], mean_face_mesh_tree_, cuda_device_);
     retval.vertices_found_[n] = vertex_projection_maps[n].size();
   }
 
@@ -120,7 +122,7 @@ estimate_coefficients(std::vector<std::string> const& img_ids,
 
   std::vector<std::map<int, vgl_point_2d<double> > > vertex_projection_maps(num_images);
   for (int n=0; n<num_images; ++n) {
-    extract_vertex_projections(semantic_maps[n], mean_face_mesh_, vertex_projection_maps[n], mean_face_mesh_tree_);
+    extract_vertex_projections(semantic_maps[n], mean_face_mesh_, vertex_projection_maps[n], mean_face_mesh_tree_, cuda_device_);
     retval.vertices_found_[n] = vertex_projection_maps[n].size();
   }
 
