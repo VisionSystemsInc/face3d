@@ -33,7 +33,7 @@ public:
   vertex_localizer(triangle_mesh const& mesh);
 
   std::map<int, vgl_point_2d<double> >
-    operator () ( dlib::array2d<vgl_point_3d<float> > const& semantic_map );
+    operator () ( dlib::array2d<vgl_point_3d<float> > const& semantic_map, int cuda_device=0 );
 
 private:
   triangle_mesh mesh_;
@@ -92,20 +92,25 @@ void localize_points(dlib::array2d<vgl_point_3d<float> > const& img,
                      triangle_mesh const& mesh,
                      std::vector<vgl_point_2d<T> > &locs,
                      const igl::AABB<triangle_mesh::VTYPE, 3>& mesh_tree,
-                     float dist_thresh=1.0);
+                     float dist_thresh=1.0,
+                     int cuda_device=0
+                     );
 
 template<class T>
 void localize_points(dlib::array2d<vgl_point_3d<float> > const& img,
                      triangle_mesh const& mesh,
                      std::vector<vgl_point_2d<T> > &locs,
                      const igl::AABB<triangle_mesh::VTYPE, 3>& mesh_tree,
-                     float dist_thresh=1.0);
+                     float dist_thresh=1.0,
+                     int cuda_device=0
+                     );
 
 template<class T1, class T2>
 void extract_vertex_projections( dlib::array2d<vgl_point_3d<T1> > const& semantic_map,
                                  triangle_mesh const& mesh,
                                  std::map<int, vgl_point_2d<T2> > &vertex_projection_map,
-                                 const igl::AABB<triangle_mesh::VTYPE, 3>& mesh_tree);
+                                 const igl::AABB<triangle_mesh::VTYPE, 3>& mesh_tree,
+                                 int cuda_device=0);
 
 #ifdef FACE3D_USE_CUDA
 void localize_points_cuda(MatrixXfRowMajor& query_points,
@@ -128,8 +133,10 @@ localize_points(dlib::array2d<vgl_point_3d<float> > const& img,
                 triangle_mesh const& mesh,
                 std::vector<vgl_point_2d<T> > &locs,
                 const igl::AABB<triangle_mesh::VTYPE, 3>& mesh_tree,
-                float dist_thresh) {
-  const int cuda_device = face3d::get_cuda_device();
+                float dist_thresh,
+                int cuda_device) {
+  const int original_cuda_device = face3d::get_cuda_device();
+  face3d::set_cuda_device(cuda_device);
   std::cout << "Running the GPU version: cuda_device = " << cuda_device << std::endl;
   const int num_vertices = mesh.num_vertices();
   const int nx = img.nc();
@@ -210,6 +217,9 @@ localize_points(dlib::array2d<vgl_point_3d<float> > const& img,
       matched_points--;
     }
   }
+
+  face3d::set_cuda_device(original_cuda_device);
+
   return;
 }
 #else
@@ -220,7 +230,9 @@ localize_points(dlib::array2d<vgl_point_3d<float> > const& img,
                 triangle_mesh const& mesh,
                 std::vector<vgl_point_2d<T> > &locs,
                 const igl::AABB<triangle_mesh::VTYPE, 3>& mesh_tree,
-                float dist_thresh)
+                float dist_thresh,
+                int cuda_device // cpu function; arg ignored
+                )
 {
   const int num_pts = mesh.num_vertices();
   const int nx = img.nc();
@@ -322,7 +334,10 @@ localize_points(dlib::array2d<vgl_point_3d<float> > const& img,
                 triangle_mesh const& mesh,
                 std::vector<vgl_point_2d<T> > &locs,
                 const igl::AABB<triangle_mesh::VTYPE, 3>& mesh_tree,
-                float dist_thresh) {
+                float dist_thresh,
+                int cuda_device // cpu function; arg ignored
+                )
+{
   dlib::array2d<unsigned char> mask(img.nr(), img.nc());
   dlib::assign_all_pixels(mask, dlib::on_pixel);
   localize_points(img, mask, mesh, locs, mesh_tree, dist_thresh);
@@ -332,7 +347,8 @@ template<class T1, class T2>
 void face3d::extract_vertex_projections( dlib::array2d<vgl_point_3d<T1> > const& semantic_map,
                                          triangle_mesh const& mesh,
                                          std::map<int, vgl_point_2d<T2> > &vertex_projection_map,
-                                         const igl::AABB<triangle_mesh::VTYPE, 3>& mesh_tree
+                                         const igl::AABB<triangle_mesh::VTYPE, 3>& mesh_tree,
+                                         int cuda_device=0
                                          )
 {
   // create mask of valid pixel locations
@@ -370,7 +386,7 @@ void face3d::extract_vertex_projections( dlib::array2d<vgl_point_3d<T1> > const&
 
   const float dist_thresh = 4.0f;
   std::vector<vgl_point_2d<float> > vert_locs;
-  localize_points(semantic_map, mask_eroded, mesh, vert_locs, mesh_tree, dist_thresh);
+  localize_points(semantic_map, mask_eroded, mesh, vert_locs, mesh_tree, dist_thresh, cuda_device);
   if (vert_locs.size() != mesh.num_vertices()) {
     throw std::logic_error("localize_points() returned unexpected number of vertex locations");
   }

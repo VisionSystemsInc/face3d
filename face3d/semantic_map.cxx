@@ -103,9 +103,9 @@ vertex_localizer(triangle_mesh const& mesh)
 
 std::map<int, vgl_point_2d<double> >
 face3d::vertex_localizer::
-operator () ( dlib::array2d<vgl_point_3d<float> > const& semantic_map )
+operator () ( dlib::array2d<vgl_point_3d<float> > const& semantic_map, int cuda_device )
 {
   std::map<int, vgl_point_2d<double>> vertex_locs;
-  extract_vertex_projections( semantic_map, mesh_, vertex_locs,  mesh_tree_);
+  extract_vertex_projections( semantic_map, mesh_, vertex_locs,  mesh_tree_, cuda_device);
   return vertex_locs;
 }
