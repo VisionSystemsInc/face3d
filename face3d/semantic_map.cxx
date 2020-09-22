@@ -95,17 +95,17 @@ void face3d::unnormalize_3d_image(vil_image_view<unsigned char> const& in, vgl_b
 }
 
 face3d::vertex_localizer::
-vertex_localizer(triangle_mesh const& mesh)
-  : mesh_(mesh)
+vertex_localizer(triangle_mesh const& mesh, int cuda_device)
+  : mesh_(mesh), cuda_device_(cuda_device)
 {
   mesh_tree_.init(mesh_.V(), mesh_.F());
 }
 
 std::map<int, vgl_point_2d<double> >
 face3d::vertex_localizer::
-operator () ( dlib::array2d<vgl_point_3d<float> > const& semantic_map, int cuda_device )
+operator () ( dlib::array2d<vgl_point_3d<float> > const& semantic_map )
 {
   std::map<int, vgl_point_2d<double>> vertex_locs;
-  extract_vertex_projections( semantic_map, mesh_, vertex_locs,  mesh_tree_, cuda_device);
+  extract_vertex_projections( semantic_map, mesh_, vertex_locs,  mesh_tree_, cuda_device_ );
   return vertex_locs;
 }

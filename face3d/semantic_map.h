@@ -30,14 +30,15 @@ namespace face3d
 class vertex_localizer
 {
 public:
-  vertex_localizer(triangle_mesh const& mesh);
+  vertex_localizer(triangle_mesh const& mesh, int cuda_device=0);
 
   std::map<int, vgl_point_2d<double> >
-    operator () ( dlib::array2d<vgl_point_3d<float> > const& semantic_map, int cuda_device=0 );
+    operator () ( dlib::array2d<vgl_point_3d<float> > const& semantic_map );
 
 private:
   triangle_mesh mesh_;
   igl::AABB<triangle_mesh::VTYPE, 3> mesh_tree_;
+  int cuda_device_;
 };
 
 extern const vgl_box_3d<double> default_semantic_map_bbox;

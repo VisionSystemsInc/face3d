@@ -58,11 +58,11 @@ wrap_coeffs_to_pixmap(face3d::head_mesh const& mesh,
 }
 
 std::map<int, vgl_point_2d<double> >
-wrap_vertex_localizer_call(face3d::vertex_localizer &self, py::array_t<float> &pncc, int cuda_device)
+wrap_vertex_localizer_call(face3d::vertex_localizer &self, py::array_t<float> &pncc)
 {
   dlib::array2d<vgl_point_3d<float> > pncc_dlib;
   pybind_util::img_from_buffer(pncc, pncc_dlib);
-  return self(pncc_dlib, cuda_device);
+  return self(pncc_dlib);
 }
 
 py::array_t<float>
@@ -963,7 +963,7 @@ PYBIND11_MODULE(face3d, m)
 #endif
 
   py::class_<face3d::vertex_localizer>(m, "vertex_localizer")
-    .def(py::init<face3d::triangle_mesh const&>())
+    .def(py::init<face3d::triangle_mesh const&, int>())
     .def("__call__", &wrap_vertex_localizer_call);
 
   m.def("compute_camera_params_bundle_adjust", &wrap_compute_camera_params_bundle_adjust1);
