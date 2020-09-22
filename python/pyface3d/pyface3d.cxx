@@ -105,24 +105,23 @@ wrap_mask_mesh_faces(triangle_mesh const& mesh, py::array_t<unsigned char> &mask
   return valid_faces;
 }
 
-void construct_triangle_mesh(face3d::triangle_mesh &mesh,
-                             py::array_t<float> &V,
-                             py::array_t<int> &F)
+face3d::triangle_mesh
+construct_triangle_mesh(py::array_t<float> &V,
+                        py::array_t<int> &F)
 {
   // convert input matrices to Eigen
   triangle_mesh::VTYPE Ve;
   triangle_mesh::FTYPE Fe;
   pybind_util::matrix_from_buffer(V, Ve);
   pybind_util::matrix_from_buffer(F, Fe);
-  // in-place constructor
-  new (&mesh) triangle_mesh(Ve, Fe);
+  return triangle_mesh(Ve, Fe);
 }
 
-void construct_triangle_mesh_full(face3d::triangle_mesh &mesh,
-                                  py::array_t<float> &V,
-                                  py::array_t<int> &F,
-                                  py::array_t<float> &N,
-                                  py::array_t<float> &UV)
+face3d::triangle_mesh
+construct_triangle_mesh_full(py::array_t<float> &V,
+                             py::array_t<int> &F,
+                             py::array_t<float> &N,
+                             py::array_t<float> &UV)
 {
   // convert input matrices to Eigen
   triangle_mesh::VTYPE Ve;
@@ -133,17 +132,16 @@ void construct_triangle_mesh_full(face3d::triangle_mesh &mesh,
   pybind_util::matrix_from_buffer(F, Fe);
   pybind_util::matrix_from_buffer(N, Ne);
   pybind_util::matrix_from_buffer(UV, Te);
-  // in-place constructor
-  new (&mesh) triangle_mesh(Ve, Fe, Ne, Te);
+  return triangle_mesh(Ve, Fe, Ne, Te);
 }
 
-void construct_textured_triangle_mesh(face3d::textured_triangle_mesh<MESH_TEX_T> &tmesh,
-                                      face3d::triangle_mesh const& mesh,
-                                      py::array_t<typename face3d_img_util::img_traits<MESH_TEX_T>::dtype> &tex)
+face3d::textured_triangle_mesh<MESH_TEX_T>
+construct_textured_triangle_mesh(face3d::triangle_mesh const& mesh,
+                                 py::array_t<typename face3d_img_util::img_traits<MESH_TEX_T>::dtype> &tex)
 {
   MESH_TEX_T tex_dlib;
   pybind_util::img_from_buffer(tex, tex_dlib);
-  new (&tmesh) textured_triangle_mesh<MESH_TEX_T>(mesh, tex_dlib);
+  return textured_triangle_mesh<MESH_TEX_T>(mesh, tex_dlib);
 }
 
 py::array_t<double>
@@ -508,7 +506,8 @@ void wrap_set_texture(face3d::textured_triangle_mesh<TEX_T> &mesh,
 }
 
 template<class TEX_T>
-py::array_t<unsigned char> wrap_get_texture(face3d::textured_triangle_mesh<TEX_T> &mesh)
+py::array_t<unsigned char>
+wrap_get_texture(face3d::textured_triangle_mesh<TEX_T> &mesh)
 {
   TEX_T const& tex = mesh.texture();
   py::array_t<unsigned char> py_tex_out;
@@ -517,14 +516,14 @@ py::array_t<unsigned char> wrap_get_texture(face3d::textured_triangle_mesh<TEX_T
 }
 
 template<class CAM_T>
-void construct_media_jitterer(face3d::media_jitterer<CAM_T, dlib::array2d<dlib::rgb_pixel>> &jitterer,
-                              std::vector<py::array_t<unsigned char> > &imgs,
-                              face3d::subject_sighting_coefficients<CAM_T> const& coeffs,
-                              face3d::head_mesh const& base_mesh,
-                              vnl_matrix<double> const& subject_pca_components,
-                              vnl_matrix<double> const& expression_pca_components,
-                              face3d::mesh_renderer &renderer,
-                              std::string const& debug_dir)
+face3d::media_jitterer<CAM_T, dlib::array2d<dlib::rgb_pixel>>
+construct_media_jitterer(std::vector<py::array_t<unsigned char> > &imgs,
+                         face3d::subject_sighting_coefficients<CAM_T> const& coeffs,
+                         face3d::head_mesh const& base_mesh,
+                         vnl_matrix<double> const& subject_pca_components,
+                         vnl_matrix<double> const& expression_pca_components,
+                         face3d::mesh_renderer &renderer,
+                         std::string const& debug_dir)
 {
   const int num_images = imgs.size();
   // convert input images to dlib array2d's
@@ -536,22 +535,21 @@ void construct_media_jitterer(face3d::media_jitterer<CAM_T, dlib::array2d<dlib::
   std::vector<face3d::sighting_coefficients<CAM_T> > sighting_coeffs =
     coeffs.all_sightings();
 
-  // in-place constructor
-  new (&jitterer) media_jitterer<CAM_T, dlib::array2d<dlib::rgb_pixel>>(imgs_dlib, sighting_coeffs, base_mesh,
-                                        subject_pca_components, expression_pca_components,
-                                        renderer, debug_dir);
+  return media_jitterer<CAM_T, dlib::array2d<dlib::rgb_pixel>>(imgs_dlib, sighting_coeffs, base_mesh,
+                                                               subject_pca_components, expression_pca_components,
+                                                               renderer, debug_dir);
 }
 
 template<class CAM_T>
-void construct_media_jitterer_wsymm(face3d::media_jitterer<CAM_T, dlib::array2d<dlib::rgb_pixel>> &jitterer,
-                                    std::vector<py::array_t<unsigned char> > &imgs,
-                                    face3d::subject_sighting_coefficients<CAM_T> const& coeffs,
-                                    face3d::head_mesh const& base_mesh,
-                                    vnl_matrix<double> const& subject_pca_components,
-                                    vnl_matrix<double> const& expression_pca_components,
-                                    face3d::mesh_renderer &renderer,
-                                    py::array_t<float> &face_symmetry_map,
-                                    std::string const& debug_dir)
+face3d::media_jitterer<CAM_T, dlib::array2d<dlib::rgb_pixel>>
+construct_media_jitterer_wsymm(std::vector<py::array_t<unsigned char> > &imgs,
+                               face3d::subject_sighting_coefficients<CAM_T> const& coeffs,
+                               face3d::head_mesh const& base_mesh,
+                               vnl_matrix<double> const& subject_pca_components,
+                               vnl_matrix<double> const& expression_pca_components,
+                               face3d::mesh_renderer &renderer,
+                               py::array_t<float> &face_symmetry_map,
+                               std::string const& debug_dir)
 {
   const int num_images = imgs.size();
   // convert input images to dlib array2d's
@@ -567,10 +565,9 @@ void construct_media_jitterer_wsymm(face3d::media_jitterer<CAM_T, dlib::array2d<
   dlib::array2d<dlib::vector<float,2> > face_symmetry_map_dlib;
   pybind_util::img_from_buffer(face_symmetry_map, face_symmetry_map_dlib);
 
-  // in-place constructor
-  new (&jitterer) media_jitterer<CAM_T, dlib::array2d<dlib::rgb_pixel>>(imgs_dlib, sighting_coeffs, base_mesh,
-                                        subject_pca_components, expression_pca_components,
-                                        renderer, face_symmetry_map_dlib, debug_dir);
+  return media_jitterer<CAM_T, dlib::array2d<dlib::rgb_pixel>>(imgs_dlib, sighting_coeffs, base_mesh,
+                                                               subject_pca_components, expression_pca_components,
+                                                               renderer, face_symmetry_map_dlib, debug_dir);
 }
 
 template<class CAM_T, class CAM_OUT_T>
@@ -720,11 +717,11 @@ void wrap_profile_jitterer(py::module &m, std::string pyname)
 
 
 template<class CAM_T>
-void construct_novel_view_jitterer(face3d::novel_view_jitterer<CAM_T, dlib::array2d<dlib::rgb_pixel>> &jitterer,
-                                   std::vector<py::array_t<unsigned char> > &imgs,
-                                   std::vector<face3d::textured_triangle_mesh<TEX_T> >& subject_meshes,
-                                   std::vector<CAM_T>& cam_params,
-                                   std::string const& debug_dir)
+face3d::novel_view_jitterer<CAM_T, dlib::array2d<dlib::rgb_pixel>>
+construct_novel_view_jitterer(std::vector<py::array_t<unsigned char> > &imgs,
+                              std::vector<face3d::textured_triangle_mesh<TEX_T> >& subject_meshes,
+                              std::vector<CAM_T>& cam_params,
+                              std::string const& debug_dir)
 {
   const int num_images = imgs.size();
   // convert input images to dlib array2d's
@@ -734,9 +731,8 @@ void construct_novel_view_jitterer(face3d::novel_view_jitterer<CAM_T, dlib::arra
   }
   // extract sighting coeffs
 
-  // in-place constructor
-  new (&jitterer) novel_view_jitterer<CAM_T, dlib::array2d<dlib::rgb_pixel> >(imgs_dlib, subject_meshes, cam_params,
-                                                                             debug_dir);
+  return novel_view_jitterer<CAM_T, dlib::array2d<dlib::rgb_pixel> >(imgs_dlib, subject_meshes, cam_params,
+                                                                     debug_dir);
 }
 template<class CAM_T, class CAM_OUT_T>
 std::vector<py::array_t<unsigned char> >
@@ -756,7 +752,7 @@ wrap_novel_view_jitterer_render(novel_view_jitterer<CAM_T, dlib::array2d<dlib::r
 template<class CAM_T>
 void wrap_novel_view_jitterer(py::module &m, std::string pyname){
     py::class_<face3d::novel_view_jitterer<CAM_T, dlib::array2d<dlib::rgb_pixel> > >(m, pyname.c_str())
-      .def("__init__", construct_novel_view_jitterer<CAM_T>)
+      .def(py::init(&construct_novel_view_jitterer<CAM_T>))
       .def("render", wrap_novel_view_jitterer_render<CAM_T, face3d::ortho_camera_parameters<double> >)
       .def("render", wrap_novel_view_jitterer_render<CAM_T, face3d::perspective_camera_parameters<double> >);
 }
@@ -764,8 +760,8 @@ template<class CAM_T>
 void wrap_media_jitterer(py::module &m, std::string pyname)
 {
   py::class_<face3d::media_jitterer<CAM_T, dlib::array2d<dlib::rgb_pixel> > >(m, pyname.c_str())
-    .def("__init__", construct_media_jitterer<CAM_T>)
-    .def("__init__", construct_media_jitterer_wsymm<CAM_T>)
+    .def(py::init(&construct_media_jitterer<CAM_T>))
+    .def(py::init(&construct_media_jitterer_wsymm<CAM_T>))
     .def("render", wrap_jitter_render<CAM_T, face3d::ortho_camera_parameters<double> >)
     .def("render", wrap_jitter_render<CAM_T, face3d::perspective_camera_parameters<double> >);
 }
@@ -842,8 +838,8 @@ PYBIND11_MODULE(face3d, m)
   py::class_<face3d::triangle_mesh>(m,"triangle_mesh")
     .def(py::init<std::string>())
     .def(py::init<face3d::triangle_mesh&>())
-    .def("__init__", construct_triangle_mesh)
-    .def("__init__", construct_triangle_mesh_full)
+    .def(py::init(&construct_triangle_mesh))
+    .def(py::init(&construct_triangle_mesh_full))
     .def_property_readonly("num_faces", &face3d::triangle_mesh::num_faces)
     .def_property_readonly("num_vertices", &face3d::triangle_mesh::num_vertices)
     .def("save_ply", &face3d::triangle_mesh::save_ply)
@@ -861,7 +857,7 @@ PYBIND11_MODULE(face3d, m)
   py::class_<face3d::textured_triangle_mesh<MESH_TEX_T>, face3d::triangle_mesh >(m, "textured_triangle_mesh")
     .def(py::init<std::string, std::string>())
     .def(py::init<face3d::textured_triangle_mesh<MESH_TEX_T>& >())
-    .def("__init__", construct_textured_triangle_mesh)
+    .def(py::init(&construct_textured_triangle_mesh))
     .def_property_readonly("num_faces", &face3d::textured_triangle_mesh<MESH_TEX_T>::num_faces)
     .def_property_readonly("num_vertices", &face3d::textured_triangle_mesh<MESH_TEX_T>::num_vertices)
     .def_property_readonly("texture_nx",[](face3d::textured_triangle_mesh<MESH_TEX_T>& mesh){return mesh.texture().nc();})
