@@ -963,7 +963,7 @@ PYBIND11_MODULE(face3d, m)
 #endif
 
   py::class_<face3d::vertex_localizer>(m, "vertex_localizer")
-    .def(py::init<face3d::triangle_mesh const&, int>())
+    .def(py::init<face3d::triangle_mesh const&, int>(), py::arg("semantic_map"), py::arg("cuda_device")=0)
     .def("__call__", &wrap_vertex_localizer_call);
 
   m.def("compute_camera_params_bundle_adjust", &wrap_compute_camera_params_bundle_adjust1);
