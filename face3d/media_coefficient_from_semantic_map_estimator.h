@@ -251,7 +251,7 @@ estimate_coefficients(std::vector<std::string> const& img_ids,
     for (int i=0; i<num_data; ++i) {
       int vert_idx = vertex_indices[i];
       const vpgl_affine_camera<double> aff_cam = local_affine(vgl_homg_point_3d<double>(mesh_vertices[i]));
-      const vnl_matrix<double> Pfull = aff_cam.get_matrix();
+      const vnl_matrix_fixed<double,3,4> Pfull = aff_cam.get_matrix();
       const vnl_matrix<double> Psub = Pfull.get_n_rows(0,2).get_n_columns(0,3);
       vnl_matrix<double> ai = Psub * subject_pca_components_transpose.get_n_rows(3*vert_idx,3);
       if ((ai.rows() != 2) || (ai.cols() != num_subject_components)) {

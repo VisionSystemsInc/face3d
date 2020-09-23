@@ -313,7 +313,7 @@ render(CAM_T_OUT const& render_cam_params,
       // mirror the original image
       flip_image[i] = true;
       vnl_matrix_fixed<double,3,3> flip_x_3x3(0.0);
-      flip_x_3x3.set_diagonal(vnl_vector_fixed<double,3>(-1,1,1));
+      flip_x_3x3.set_diagonal(vnl_vector_fixed<double,3>(-1,1,1).as_ref());
       R_og *= flip_x_3x3;
     }
     vnl_vector_fixed<double,3> cam_z_vnl = R_og.get_row(2);
