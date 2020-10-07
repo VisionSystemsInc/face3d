@@ -349,7 +349,7 @@ void face3d::extract_vertex_projections( dlib::array2d<vgl_point_3d<T1> > const&
                                          triangle_mesh const& mesh,
                                          std::map<int, vgl_point_2d<T2> > &vertex_projection_map,
                                          const igl::AABB<triangle_mesh::VTYPE, 3>& mesh_tree,
-                                         int cuda_device=0
+                                         int cuda_device
                                          )
 {
   // create mask of valid pixel locations
