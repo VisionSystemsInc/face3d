@@ -863,7 +863,8 @@ PYBIND11_MODULE(face3d, m)
     .def_property_readonly("texture_nx",[](face3d::textured_triangle_mesh<MESH_TEX_T>& mesh){return mesh.texture().nc();})
     .def_property_readonly("texture_ny",[](face3d::textured_triangle_mesh<MESH_TEX_T>& mesh){return mesh.texture().nr();})
     .def("set_texture", &wrap_set_texture<MESH_TEX_T>)
-    .def("texture", &wrap_get_texture<MESH_TEX_T>);
+    .def("texture", &wrap_get_texture<MESH_TEX_T>)
+    .def("save_obj", &face3d::textured_triangle_mesh<MESH_TEX_T>::save_obj);
 
   py::class_<face3d::head_mesh>(m, "head_mesh")
     .def(py::init<std::string>())
