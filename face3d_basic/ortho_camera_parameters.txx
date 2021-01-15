@@ -103,7 +103,7 @@ void ortho_camera_parameters<T >::from_camera(vpgl_affine_camera<T> const& camer
   // We want RQ decomposition. vnl only provides QR, so jump through some hoops
   vnl_matrix_fixed<T,3,2> A1 = A.transpose().fliplr();
 
-  vnl_qr<T> QR(A1);
+  vnl_qr<T> QR(A1.as_ref());
   vnl_matrix_fixed<T,2,2> AR1 = QR.R().get_n_rows(0,2);
   vnl_matrix_fixed<T,3,2> AQ1 = QR.Q().get_n_columns(0,2);
 
@@ -158,14 +158,14 @@ void ortho_camera_parameters<T >::from_camera(vpgl_affine_camera<T> const& camer
   K[1][2] = offset_.y();
   K[2][2] = 1.0;
 
-  vnl_matrix_fixed<T,3,3> Kresidual = vnl_matrix_inverse<T>(K) * Kortho.as_ref();
+  vnl_matrix_fixed<T,3,3> Kresidual = vnl_matrix_inverse<T>(K.as_ref()) * Kortho.as_ref();
 
   // now construct the transform H that can be applied to 3-d points to account for A
-  vnl_matrix_fixed<T,3,3> H = rotation_.inverse().as_matrix() * (vnl_matrix_inverse<T>(Kresidual) * rotation_.as_matrix().as_ref());
+  vnl_matrix_fixed<T,3,3> H = rotation_.inverse().as_matrix() * (vnl_matrix_inverse<T>(Kresidual.as_ref()) * rotation_.as_matrix().as_ref());
   //std::cout << "H = " << H << std::endl;
 
   // factor rotation component out of H and apply to extrinsics
-  vnl_qr<T> Hqr(H);
+  vnl_qr<T> Hqr(H.as_ref());
   vnl_matrix_fixed<T,3,3> H_rot = Hqr.Q();
   vnl_matrix_fixed<T,3,3> H_tri = Hqr.R();
   // make sure diagonal components of H_tri are positive
