@@ -403,6 +403,15 @@ wrap_render(face3d::mesh_renderer &renderer,
   return py_img;
 }
 
+py::array_t<float>
+wrap_get_last_depth(face3d::mesh_renderer &renderer)
+{
+  py::array_t<float> py_depth_img;
+  pybind_util::img_to_buffer(renderer.get_last_depth(), py_depth_img);
+
+  return py_depth_img;
+}
+
 template<class CAM_T, class TEX_T>
 py::array_t<float>
 wrap_render_3d(face3d::mesh_renderer &renderer,
@@ -910,6 +919,7 @@ PYBIND11_MODULE(face3d, m)
     .def(py::init<unsigned>())
     .def("render", &wrap_render<ortho_camera_parameters<double>, MESH_TEX_T >)
     .def("render", &wrap_render<perspective_camera_parameters<double>, MESH_TEX_T>)
+    .def("get_last_depth", &wrap_get_last_depth)
     .def("render_3d", &wrap_render_3d<ortho_camera_parameters<double>, MESH_TEX_T>)
     .def("render_3d", &wrap_render_3d<perspective_camera_parameters<double>, MESH_TEX_T>)
     .def("render_uv", &wrap_render_uv<ortho_camera_parameters<double>, MESH_TEX_T>)
