@@ -31,7 +31,8 @@ using face3d::ortho_camera_parameters;
 std::mutex face3d::mesh_renderer::renderer_mutex_;
 face3d::mesh_renderer::mesh_renderer()
   : light_dir_(0,0.5,0.5), light_ambient_weight_(0.5), debug_mode_(false),
-    background_color_(50,150,50),device_id_(0)
+    background_color_(50,150,50),device_id_(0),
+    perspective_depth_range_(250),ortho_depth_range_(1000)
 {
 #if !FACE3D_USE_EGL
   glfw_window_ = nullptr;
@@ -41,7 +42,8 @@ face3d::mesh_renderer::mesh_renderer()
 
 face3d::mesh_renderer::mesh_renderer(unsigned device_id)
   : light_dir_(0,0.5,0.5), light_ambient_weight_(0.5), debug_mode_(false),
-    background_color_(50,150,50),device_id_(device_id)
+    background_color_(50,150,50),device_id_(device_id),
+    perspective_depth_range_(250),ortho_depth_range_(1000)
 {
 #if !FACE3D_USE_EGL
   glfw_window_ = nullptr;
@@ -520,7 +522,7 @@ draw_triangles_2d(Eigen::MatrixXd const& V,
 void mesh_renderer::
 set_camera_uniform_variables(GLuint shader_prog, ortho_camera_parameters<double> const& cam_params)
 {
-  const float depth_range = 300000.0f;
+  float depth_range = this->ortho_depth_range_;
   glUniform1f(glGetUniformLocation(shader_prog, "cam_scale"),
               cam_params.scale());
   float offset_z = depth_range / 2;
@@ -542,7 +544,8 @@ set_camera_uniform_variables(GLuint shader_prog, perspective_camera_parameters<d
 {
   vgl_point_3d<double> cam_center(cam_params.to_camera().camera_center());
   float dist = static_cast<float>((cam_center - vgl_point_3d<double>(0,0,0)).length());
-  const float depth_range[2] = {dist-250,dist+250};
+  float delta_d = this->perspective_depth_range_;
+  const float depth_range[2] = {dist - delta_d, dist + delta_d };
 
   glUniform1f(glGetUniformLocation(shader_prog, "cam_focal_len"),
               cam_params.focal_len());

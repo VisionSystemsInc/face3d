@@ -98,7 +98,8 @@ public:
   void set_light_dir(vgl_vector_3d<double> light_dir){light_dir_ = light_dir;}
   void set_ambient_weight(float weight){light_ambient_weight_ = weight;}
   void set_background_color(dlib::rgb_pixel const& color) { background_color_ = color;}
-
+  void set_perspective_depth_range(float depth_range){perspective_depth_range_ = depth_range;}
+  void set_ortho_depth_range(float depth_range){ortho_depth_range_ = depth_range;}
   void set_debug_dir(std::string const& dbg_dir) { debug_dir_ = dbg_dir; }
   void set_debug_mode(bool dbg_mode) { debug_mode_ = dbg_mode; }
   dlib::array2d<GLfloat>& get_last_depth(){return this->last_depth_;}
@@ -108,7 +109,8 @@ private:
 
   void init_renderer();
   void make_context_current();
-
+  float perspective_depth_range_;
+  float ortho_depth_range_;
 #if FACE3D_USE_EGL
   void init_context_EGL();
   // egl stuff

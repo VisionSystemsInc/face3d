@@ -743,6 +743,22 @@ construct_novel_view_jitterer(std::vector<py::array_t<unsigned char> > &imgs,
   return novel_view_jitterer<CAM_T, dlib::array2d<dlib::rgb_pixel> >(imgs_dlib, subject_meshes, cam_params,
                                                                      debug_dir);
 }
+
+template<class CAM_T>
+void
+wrap_novel_view_jitterer_override_texture(novel_view_jitterer<CAM_T, dlib::array2d<dlib::rgb_pixel> > & novel_jitterer,
+                                          std::vector<py::array_t<unsigned char> > &textures){
+
+  const int num_textures = textures.size();
+  // convert input images to dlib array2d's
+  std::vector<dlib::array2d<dlib::rgb_alpha_pixel> > textures_dlib(num_textures);
+  for (int i=0; i<num_textures; ++i) {
+    pybind_util::img_from_buffer(textures[i], textures_dlib[i]);
+  }
+  novel_jitterer.override_texture(textures_dlib);
+  return;
+}
+
 template<class CAM_T, class CAM_OUT_T>
 std::vector<py::array_t<unsigned char> >
 wrap_novel_view_jitterer_render(novel_view_jitterer<CAM_T, dlib::array2d<dlib::rgb_pixel> > & novel_jitterer,
@@ -762,6 +778,8 @@ template<class CAM_T>
 void wrap_novel_view_jitterer(py::module &m, std::string pyname){
     py::class_<face3d::novel_view_jitterer<CAM_T, dlib::array2d<dlib::rgb_pixel> > >(m, pyname.c_str())
       .def(py::init(&construct_novel_view_jitterer<CAM_T>))
+      .def("override_texture", wrap_novel_view_jitterer_override_texture<CAM_T> )
+      .def("init", &face3d::novel_view_jitterer<CAM_T, dlib::array2d<dlib::rgb_pixel> >::init_renderer)
       .def("render", wrap_novel_view_jitterer_render<CAM_T, face3d::ortho_camera_parameters<double> >)
       .def("render", wrap_novel_view_jitterer_render<CAM_T, face3d::perspective_camera_parameters<double> >);
 }
@@ -933,7 +951,10 @@ PYBIND11_MODULE(face3d, m)
          py::arg("tex_nearest_neighbor_interp")=false)
     .def("set_background_color", &wrap_set_background_color)
     .def("set_ambient_weight", &face3d::mesh_renderer::set_ambient_weight)
-    .def("set_light_dir", &face3d::mesh_renderer::set_light_dir);
+    .def("set_light_dir", &face3d::mesh_renderer::set_light_dir)
+    .def("set_perspective_depth_range", &face3d::mesh_renderer::set_perspective_depth_range)
+    .def("set_ortho_depth_range", &face3d::mesh_renderer::set_ortho_depth_range);
+
 
   m.def("correct_offsets", &wrap_correct_offsets);
 

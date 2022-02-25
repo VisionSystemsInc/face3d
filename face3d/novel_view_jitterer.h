@@ -39,6 +39,20 @@ namespace face3d{
                           std::vector<CAM_T> & cam_params,
                           dlib::array2d<dlib::rgb_alpha_pixel> &face_tex);
 
+    void override_texture(std::vector<TEX_T>& new_face_textures);
+    void init_renderer(){
+      bool already_initted = true;
+      if (!model_renderer_){
+        model_renderer_.reset(new face3d::mesh_renderer(this->gl_device_id_));
+        already_initted = false;
+      }
+      if (!bkgnd_renderer_){
+        bkgnd_renderer_.reset(new face3d::mesh_background_renderer_agnostic<CAM_T, IMG_T>(this->images_, this->subject_meshes_,this->cam_params_, *this->model_renderer_));
+        already_initted = false;
+      }
+      if (! already_initted)
+        init(images_, subject_meshes_, cam_params_, face_sym_map_);
+    }
 
   protected:
     void init(std::vector<IMG_T > const& images,
@@ -46,15 +60,6 @@ namespace face3d{
               std::vector<CAM_T> & cam_params,
               dlib::array2d<dlib::vector<float,2> > const& face_sym_map);
 
-    void init_renderer(){
-      if (!model_renderer_){
-        model_renderer_.reset(new face3d::mesh_renderer(this->gl_device_id_));
-      }
-      if (!bkgnd_renderer_){
-        bkgnd_renderer_.reset(new face3d::mesh_background_renderer_agnostic<CAM_T, IMG_T>(this->images_, this->subject_meshes_,this->cam_params_, *this->model_renderer_));
-      }
-      init(images_, subject_meshes_, cam_params_, face_sym_map_);
-    }
 
     void enable_texture(face3d::textured_triangle_mesh<TEX_T> & mesh, bool tex_enabled);
     std::string debug_dir_;
@@ -219,4 +224,16 @@ namespace face3d{
     }
   }
 
+  template<class CAM_T, class IMG_T>
+  void novel_view_jitterer<CAM_T, IMG_T>::
+  override_texture(std::vector<TEX_T> & new_face_textures)
+  {
+    if (new_face_textures.size() != this->subject_meshes_.size()){
+      std::cout<<"Cannot assign new textures to subject meshes due to size mismatch "<<new_face_textures.size()<<" vs "<<this->subject_meshes_.size()<< std::endl;
+        return;
+      }
+    for (unsigned i=0; i< new_face_textures.size(); i++){
+      this->subject_meshes_[i].set_texture(new_face_textures[i]);
+    }
+  }
 }
