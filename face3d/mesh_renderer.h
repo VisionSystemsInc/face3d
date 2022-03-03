@@ -12,8 +12,6 @@
 #include <dlib/array2d.h>
 #include <dlib/pixel.h>
 
-#include <Eigen/Dense>
-
 #ifndef __APPLE__
 #include <glad/glad.h>
 #else
@@ -25,7 +23,10 @@
 #else
 #include <GLFW/glfw3.h>
 #endif
-
+#ifdef Success
+#undef Success
+#endif
+#include <Eigen/Dense>
 #include <face3d_basic/ortho_camera_parameters.h>
 #include <face3d_basic/face3d_img_util.h>
 #include <face3d_basic/perspective_camera_parameters.h>
@@ -48,7 +49,7 @@ class mesh_renderer
 public:
 
   mesh_renderer();
-  mesh_renderer(unsigned device_id);
+  mesh_renderer(unsigned device_id, bool quiet=false);
 #if !FACE3D_USE_EGL
   // constructor used for sharing GLFW OpenGL contexts
   mesh_renderer(GLFWwindow* window);
@@ -189,6 +190,7 @@ private:
   float light_ambient_weight_;
 
   bool debug_mode_;
+  bool quiet_;
   std::string debug_dir_;
   int device_id_;
   dlib::rgb_pixel background_color_;

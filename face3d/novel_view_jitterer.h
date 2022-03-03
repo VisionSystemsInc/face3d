@@ -43,7 +43,7 @@ namespace face3d{
     void init_renderer(){
       bool already_initted = true;
       if (!model_renderer_){
-        model_renderer_.reset(new face3d::mesh_renderer(this->gl_device_id_));
+        model_renderer_.reset(new face3d::mesh_renderer(this->gl_device_id_, true));
         already_initted = false;
       }
       if (!bkgnd_renderer_){

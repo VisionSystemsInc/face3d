@@ -32,7 +32,7 @@ std::mutex face3d::mesh_renderer::renderer_mutex_;
 face3d::mesh_renderer::mesh_renderer()
   : light_dir_(0,0.5,0.5), light_ambient_weight_(0.5), debug_mode_(false),
     background_color_(50,150,50),device_id_(0),
-    perspective_depth_range_(250),ortho_depth_range_(1000)
+    perspective_depth_range_(250),ortho_depth_range_(1000), quiet_(false)
 {
 #if !FACE3D_USE_EGL
   glfw_window_ = nullptr;
@@ -40,10 +40,10 @@ face3d::mesh_renderer::mesh_renderer()
   init_renderer();
 }
 
-face3d::mesh_renderer::mesh_renderer(unsigned device_id)
+face3d::mesh_renderer::mesh_renderer(unsigned device_id, bool quiet)
   : light_dir_(0,0.5,0.5), light_ambient_weight_(0.5), debug_mode_(false),
     background_color_(50,150,50),device_id_(device_id),
-    perspective_depth_range_(250),ortho_depth_range_(1000)
+    perspective_depth_range_(250),ortho_depth_range_(1000), quiet_(quiet)
 {
 #if !FACE3D_USE_EGL
   glfw_window_ = nullptr;
@@ -77,7 +77,8 @@ void face3d::mesh_renderer::init_context_EGL()
     std::cerr << "ERROR: eglQueryDevices() returned error." << std::endl;
     throw std::runtime_error("EGL Initialization Error");
   }
-  std::cout << "Found " << num_egl_devices << " EGL devices." << std::endl;
+  if (! quiet_)
+    std::cout << "Found " << num_egl_devices << " EGL devices." << std::endl;
   if (num_egl_devices <= 0) {
     std::cerr << "ERROR: num_egl_devices = " << num_egl_devices << std::endl;
     throw std::runtime_error("Found 0 EGL Devices");
@@ -92,7 +93,8 @@ void face3d::mesh_renderer::init_context_EGL()
    std::stringstream dev_str;
    dev_str<<devstr;
 
-   std::cout << "Using EGL Device Index: " << this->device_id_ << " ("<<dev_str.str()<<")"<<std::endl;
+   if (! quiet_)
+     std::cout << "Using EGL Device Index: " << this->device_id_ << " ("<<dev_str.str()<<")"<<std::endl;
 
   // 1. initialize the EGL display
   egl_display_ = eglGetPlatformDisplayEXT(EGL_PLATFORM_DEVICE_EXT, egl_devices[this->device_id_], 0);
@@ -108,7 +110,8 @@ void face3d::mesh_renderer::init_context_EGL()
   if(eglInitialize(egl_display_, &major, &minor) == EGL_FALSE) {
     throw std::runtime_error("Failed to initialize EGL Display");
   }
-  std::cout << "initialized EGL, version = " << major << "." << minor << std::endl;
+  if (! quiet_)
+    std::cout << "initialized EGL, version = " << major << "." << minor << std::endl;
 
   // 2. Select an appropriate configuration
 #if 1
@@ -143,8 +146,8 @@ void face3d::mesh_renderer::init_context_EGL()
   EGLint num_egl_configs;
   EGLConfig egl_config;
   eglChooseConfig(egl_display_, configAttribs, &egl_config, 1, &num_egl_configs);
-
-  std::cout << "Found " << num_egl_configs << " EGL configs." << std::endl;
+  if (! quiet_)
+     std::cout << "Found " << num_egl_configs << " EGL configs." << std::endl;
 
 //#define CREATE_EGL_SURFACE
 #ifdef CREATE_EGL_SURFACE
@@ -237,13 +240,16 @@ void face3d::mesh_renderer::init_renderer()
   if(!gladLoadGLES2Loader((GLADloadproc)eglGetProcAddress)) {
     throw std::runtime_error("GLAD failed to load OpenGL ES2");
   }
-  std::cout << "Loaded OpenGL ES2" << std::endl;
-  std::cout << "OpenGL Version " << GLVersion.major << "." << GLVersion.minor << " loaded." << std::endl;
+  if (! quiet_){
+    std::cout << "Loaded OpenGL ES2" << std::endl;
+    std::cout << "OpenGL Version " << GLVersion.major << "." << GLVersion.minor << " loaded." << std::endl;
+  }
 #else
   if(!gladLoadGL()) {
     throw std::runtime_error("GLAD failed to load OpenGL");
   }
-  std::cout << "OpenGL Version " << GLVersion.major << "." << GLVersion.minor << " loaded." << std::endl;
+  if (! quiet_)
+     std::cout << "OpenGL Version " << GLVersion.major << "." << GLVersion.minor << " loaded." << std::endl;
 #endif
 #endif
 
@@ -397,7 +403,8 @@ void face3d::mesh_renderer::init_renderer()
     glDeleteShader(rtt_vertex_shader_ortho);
     glDeleteShader(rtt_fragment_shader);
   }
-  std::cout << "mesh_renderer initialized." << std::endl;
+  if (! quiet_)
+    std::cout << "mesh_renderer initialized." << std::endl;
 }
 
 face3d::mesh_renderer::~mesh_renderer()
@@ -411,10 +418,11 @@ face3d::mesh_renderer::~mesh_renderer()
   glDeleteProgram(shader_prog_2d_);
 
 #if FACE3D_USE_EGL
-  std::cout << "Destroying EGL Context" << std::endl;
+  if (! quiet_)
+     std::cout << "Destroying EGL Context" << std::endl;
   eglDestroySurface(egl_display_, egl_surface_);
   eglDestroyContext(egl_display_, egl_context_);
-  // eglTerminate(egl_display_);
+  eglTerminate(egl_display_);
 #else
   if (gl_context_owned_) {
     glfwTerminate();
