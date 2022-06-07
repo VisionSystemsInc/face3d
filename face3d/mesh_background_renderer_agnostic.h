@@ -203,7 +203,7 @@ initialize(std::vector<face3d::textured_triangle_mesh<TEX_T> >& meshes)
     const int nx = cam_params_[i].nx();
     const int ny = cam_params_[i].ny();
 
-    const int num_boundary_verts_per_side = 100;
+    const int num_boundary_verts_per_side = 50;
     const int num_boundary_verts = 4*num_boundary_verts_per_side;
 
     // triangulate

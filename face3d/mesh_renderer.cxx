@@ -422,7 +422,7 @@ face3d::mesh_renderer::~mesh_renderer()
      std::cout << "Destroying EGL Context" << std::endl;
   eglDestroySurface(egl_display_, egl_surface_);
   eglDestroyContext(egl_display_, egl_context_);
-  eglTerminate(egl_display_);
+  // eglTerminate(egl_display_);
 #else
   if (gl_context_owned_) {
     glfwTerminate();
